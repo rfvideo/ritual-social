@@ -13,13 +13,17 @@ export interface TxResult {
   status: 'success' | 'reverted';
 }
 
-/**
- * Wraps a single fee-gated write call to RitualSocial with the full
- * lifecycle the spec requires: wallet confirmation → real broadcast →
- * wait for receipt → only then treat the action as applied.
- * Nothing here is simulated — a reverted or rejected tx yields no
- * optimistic state change upstream.
- */
+const GAS_LIMITS: Record<string, bigint> = {
+  createPost: 350_000n,
+  likePost: 150_000n,
+  commentOnPost: 300_000n,
+  repost: 300_000n,
+  follow: 150_000n,
+  unfollow: 150_000n,
+  updateProfile: 200_000n,
+  tip: 100_000n,
+};
+
 function useRitualAction(functionName: string) {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
@@ -31,12 +35,16 @@ function useRitualAction(functionName: string) {
       setError(null);
       try {
         setStage('awaiting-wallet');
+        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
           functionName,
           args,
           value: parseEther(ACTION_FEE_ETH),
+          type: 'legacy',
+          gas: GAS_LIMITS[functionName],
+          gasPrice,
         });
 
         setStage('pending');
@@ -91,7 +99,6 @@ export function useRepost() {
   return { repost, ...action };
 }
 
-/** Follow / unfollow are free (no action fee) per spec — separate from useRitualAction. */
 export function useFollowGraph() {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
@@ -101,11 +108,15 @@ export function useFollowGraph() {
     async (functionName: 'follow' | 'unfollow', account: `0x${string}`) => {
       setPending(true);
       try {
+        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
           functionName,
           args: [account],
+          type: 'legacy',
+          gas: GAS_LIMITS[functionName],
+          gasPrice,
         });
         toast.loading('Sending follow transaction…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -141,12 +152,16 @@ export function useTipCreator() {
     async (creator: `0x${string}`, amountEth: string) => {
       setPending(true);
       try {
+        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualTreasuryContract.address,
           abi: ritualTreasuryContract.abi,
           functionName: 'tip',
           args: [creator],
           value: parseEther(amountEth),
+          type: 'legacy',
+          gas: GAS_LIMITS.tip,
+          gasPrice,
         });
         toast.loading('Sending tip…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -167,4 +182,4 @@ export function useTipCreator() {
   );
 
   return { tip, pending };
-}
+            }
