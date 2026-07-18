@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
 import { WalletBadge } from '@/components/wallet/WalletBadge';
-import { TranslateButton } from '@/components/ai/TranslateButton';
 import { SkeletonPost } from '@/components/common/Skeleton';
 import { EmptyState } from '@/components/common/States';
 import { useComments } from '@/hooks/useComments';
@@ -64,12 +63,9 @@ export function CommentList({ postId }: { postId: string }) {
               <span className="text-xs text-mist-dim">· {formatRelativeTime(c.createdAt)}</span>
             </div>
             <p className="mt-0.5 text-sm text-mist-light">{c.body}</p>
-            <div className="mt-1">
-              <TranslateButton text={c.body} />
-            </div>
           </div>
         </div>
       ))}
     </div>
   );
-}
+                }
