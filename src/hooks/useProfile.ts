@@ -97,7 +97,6 @@ export function useUpdateProfile() {
           abi: ritualSocialContract.abi,
           functionName: 'updateProfile',
           args: [metadataURI],
-          type: 'legacy',
           gas: 200_000n,
         });
         toast.loading('Saving profile on-chain…', { id: hash });
@@ -120,4 +119,4 @@ export function useUpdateProfile() {
   );
 
   return { updateProfile, pending };
-                                                                                 }
+    }
