@@ -20,7 +20,7 @@ const metadataCache = new Map<string, PostMetadata>();
 
 export async function fetchPostMetadata(contentURI: string): Promise<PostMetadata> {
   if (metadataCache.has(contentURI)) return metadataCache.get(contentURI)!;
-  const res = await fetch(resolveIpfsUri(contentURI));
+  const res = await fetch(resolveIpfsUri(contentURI), { signal: AbortSignal.timeout(6000) });
   if (!res.ok) throw new Error(`Failed to fetch post metadata: ${res.status}`);
   const data = (await res.json()) as PostMetadata;
   metadataCache.set(contentURI, data);
