@@ -23,12 +23,12 @@ const ICON_COLOR: Record<NotificationRecord['kind'], string> = {
 };
 
 const VERB: Record<NotificationRecord['kind'], string> = {
-  like: 'menyukai postinganmu',
-  comment: 'mengomentari postinganmu',
-  reply: 'membalas komentarmu',
-  mention: 'menyebutmu',
-  follow: 'mengikutimu',
-  repost: 'me-repost postinganmu',
+  like: 'liked your post',
+  comment: 'commented on your post',
+  reply: 'replied to your comment',
+  mention: 'mentioned you',
+  follow: 'followed you',
+  repost: 'reposted your post',
 };
 
 export function NotificationItem({ notification }: { notification: NotificationRecord }) {

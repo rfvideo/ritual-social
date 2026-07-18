@@ -21,8 +21,8 @@ function ConfigWarningBanner() {
     <div className="flex items-center gap-2 border-b border-yellow-900/50 bg-yellow-950/40 px-4 py-2 text-xs text-yellow-300">
       <AlertTriangle size={14} className="shrink-0" />
       {!isChainConfigured
-        ? 'RPC Ritual Chain belum dikonfigurasi — isi VITE_RITUAL_RPC_URL di .env.'
-        : 'Kontrak belum di-deploy — jalankan forge script di /contracts lalu isi VITE_RITUAL_SOCIAL_ADDRESS.'}
+        ? 'Ritual Chain RPC not configured — set VITE_RITUAL_RPC_URL in .env.'
+        : 'Contracts not deployed yet — run the forge script in /contracts, then set VITE_RITUAL_SOCIAL_ADDRESS.'}
     </div>
   );
 }

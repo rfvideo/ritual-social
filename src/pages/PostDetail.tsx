@@ -21,7 +21,7 @@ export function PostDetailPage() {
       </div>
 
       {isLoading && <SkeletonPost />}
-      {isError && <ErrorState message="Postingan tidak ditemukan atau gagal dimuat." onRetry={() => refetch()} />}
+      {isError && <ErrorState message="Post not found or failed to load." onRetry={() => refetch()} />}
       {post && <PostCard post={post} />}
 
       {postId && (

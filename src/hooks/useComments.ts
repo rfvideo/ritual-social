@@ -22,16 +22,19 @@ export function useComments(postId: string) {
 
       const records = await Promise.all(
         commentIds.map(async (commentId) => {
-          const struct = (await publicClient!.readContract({
+          const rawStruct = (await publicClient!.readContract({
             address: ritualSocialContract.address,
             abi: ritualSocialContract.abi,
             functionName: 'comments',
             args: [commentId],
-          })) as any;
+          })) as unknown as [string, bigint, string, bigint];
+
+          // (author, postId, contentURI, timestamp) — positional, see note in useProfile.ts
+          const [author, , contentURI, timestamp] = rawStruct;
 
           const [profile, meta] = await Promise.all([
-            fetchProfile(publicClient!, struct.author),
-            fetchCommentMetadata(struct.contentURI).catch(() => ({ caption: '(gagal memuat)' }) as any),
+            fetchProfile(publicClient!, author as `0x${string}`),
+            fetchCommentMetadata(contentURI).catch(() => ({ caption: '(failed to load)' }) as any),
           ]);
 
           const record: CommentRecord = {
@@ -39,12 +42,12 @@ export function useComments(postId: string) {
             postId,
             author: profile,
             body: meta.caption,
-            createdAt: Number(struct.timestamp) * 1000,
+            createdAt: Number(timestamp) * 1000,
             onChain: {
               txHash: '0x0' as `0x${string}`, // per-event tx hash requires log lookup; struct alone doesn't carry it
               blockNumber: 0,
-              timestamp: Number(struct.timestamp) * 1000,
-              from: struct.author,
+              timestamp: Number(timestamp) * 1000,
+              from: author as `0x${string}`,
               to: ritualSocialContract.address,
               status: 'success',
             },

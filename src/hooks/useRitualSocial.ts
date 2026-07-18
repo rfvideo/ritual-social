@@ -40,22 +40,22 @@ function useRitualAction(functionName: string) {
         });
 
         setStage('pending');
-        toast.loading('Menunggu konfirmasi di Ritual Chain…', { id: hash });
+        toast.loading('Waiting for confirmation on Ritual Chain…', { id: hash });
 
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
 
         if (receipt.status === 'success') {
           setStage('confirmed');
-          toast.success('Transaksi terkonfirmasi on-chain', { id: hash });
+          toast.success('Transaction confirmed on-chain', { id: hash });
         } else {
           setStage('failed');
-          toast.error('Transaksi revert di chain', { id: hash });
+          toast.error('Transaction reverted on-chain', { id: hash });
         }
 
         return { hash, blockNumber: receipt.blockNumber, status: receipt.status };
       } catch (err: any) {
         setStage('failed');
-        const message = err?.shortMessage ?? err?.message ?? 'Transaksi gagal atau ditolak';
+        const message = err?.shortMessage ?? err?.message ?? 'Transaction failed or rejected';
         setError(message);
         toast.error(message);
         return null;
@@ -107,16 +107,16 @@ export function useFollowGraph() {
           functionName,
           args: [account],
         });
-        toast.loading('Mengirim transaksi follow…', { id: hash });
+        toast.loading('Sending follow transaction…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
         if (receipt.status === 'success') {
-          toast.success(functionName === 'follow' ? 'Berhasil follow' : 'Berhasil unfollow', { id: hash });
+          toast.success(functionName === 'follow' ? 'Followed successfully' : 'Unfollowed successfully', { id: hash });
           return true;
         }
-        toast.error('Transaksi revert', { id: hash });
+        toast.error('Transaction reverted', { id: hash });
         return false;
       } catch (err: any) {
-        toast.error(err?.shortMessage ?? 'Transaksi gagal atau ditolak');
+        toast.error(err?.shortMessage ?? 'Transaction failed or rejected');
         return false;
       } finally {
         setPending(false);
@@ -148,16 +148,16 @@ export function useTipCreator() {
           args: [creator],
           value: parseEther(amountEth),
         });
-        toast.loading('Mengirim tip…', { id: hash });
+        toast.loading('Sending tip…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
         if (receipt.status === 'success') {
-          toast.success('Tip terkirim on-chain 🎉', { id: hash });
+          toast.success('Tip sent on-chain 🎉', { id: hash });
           return { hash };
         }
-        toast.error('Transaksi tip revert', { id: hash });
+        toast.error('Tip transaction reverted', { id: hash });
         return null;
       } catch (err: any) {
-        toast.error(err?.shortMessage ?? 'Transaksi gagal atau ditolak');
+        toast.error(err?.shortMessage ?? 'Transaction failed or rejected');
         return null;
       } finally {
         setPending(false);

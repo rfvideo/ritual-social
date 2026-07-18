@@ -30,11 +30,11 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-400">
         <AlertTriangle size={22} />
       </div>
-      <p className="font-display text-base text-mist-light">Terjadi kesalahan</p>
-      <p className="max-w-xs text-sm text-mist-dim">{message ?? 'Gagal memuat data dari Ritual Chain.'}</p>
+      <p className="font-display text-base text-mist-light">Something went wrong</p>
+      <p className="max-w-xs text-sm text-mist-dim">{message ?? 'Failed to load data from Ritual Chain.'}</p>
       {onRetry && (
         <button onClick={onRetry} className="ritual-btn-ghost">
-          <RotateCw size={14} /> Coba lagi
+          <RotateCw size={14} /> Retry
         </button>
       )}
     </div>

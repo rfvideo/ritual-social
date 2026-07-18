@@ -13,8 +13,8 @@ export const handler: Handler = async (event) => {
   const job = await runInfernetJob<CaptionOutput>(
     { containerId: 'ritual-caption', input: { imageURIs } },
     () => ({
-      caption: 'A moment worth sharing on Ritual Social ✨',
-      hashtags: ['#RitualSocial', '#AINative'],
+      caption: '',
+      hashtags: [],
     }),
   );
 

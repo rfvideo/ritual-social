@@ -23,7 +23,7 @@ function TermChip({ term }: { term: string }) {
         className="flex items-center gap-1 rounded-full border border-ash-300 px-2.5 py-1 text-xs text-mist transition hover:border-ritual-500 hover:text-ritual-300"
       >
         {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-        Jelaskan: {term}
+        Explain: {term}
       </button>
       {open && result && (
         <p className="mt-1.5 max-w-xs rounded-xl bg-ash-100 px-3 py-2 text-xs leading-relaxed text-mist-light">

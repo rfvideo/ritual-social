@@ -35,13 +35,13 @@ async function loadFeed(
       const postId = (log as any).args.postId as bigint;
       const author = (log as any).args.author as `0x${string}`;
 
-      const [struct, profile, likedByMe, repostedByMe] = await Promise.all([
+      const [rawStruct, profile, likedByMe, repostedByMe] = await Promise.all([
         publicClient.readContract({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
           functionName: 'posts',
           args: [postId],
-        }) as Promise<any>,
+        }) as Promise<unknown>,
         fetchProfile(publicClient, author),
         viewer
           ? (publicClient.readContract({
@@ -61,14 +61,21 @@ async function loadFeed(
           : Promise.resolve(false),
       ]);
 
+      // RitualSocial's auto-generated `posts(id)` getter returns the Post
+      // struct's fields as a positional tuple, not a named object — destructure
+      // by position: (author, contentURI, timestamp, likeCount, commentCount,
+      // repostCount, isRepost, originalPostId, exists).
+      const [, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId] =
+        rawStruct as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
+
       let caption = '';
       let images: string[] = [];
       try {
-        const meta = await fetchPostMetadata(struct.contentURI as string);
+        const meta = await fetchPostMetadata(contentURI);
         caption = meta.caption;
         images = meta.images;
       } catch {
-        caption = '(gagal memuat metadata IPFS)';
+        caption = '(failed to load IPFS metadata)';
       }
 
       const record: PostRecord = {
@@ -76,17 +83,17 @@ async function loadFeed(
         author: profile,
         images,
         caption,
-        createdAt: Number(struct.timestamp) * 1000,
-        likeCount: Number(struct.likeCount),
-        commentCount: Number(struct.commentCount),
-        repostCount: Number(struct.repostCount),
+        createdAt: Number(timestamp) * 1000,
+        likeCount: Number(likeCount),
+        commentCount: Number(commentCount),
+        repostCount: Number(repostCount),
         viewCount: 0,
-        isRepost: struct.isRepost,
-        originalPostId: struct.isRepost ? String(struct.originalPostId) : undefined,
+        isRepost,
+        originalPostId: isRepost ? String(originalPostId) : undefined,
         onChain: {
           txHash: log.transactionHash!,
           blockNumber: Number(log.blockNumber),
-          timestamp: Number(struct.timestamp) * 1000,
+          timestamp: Number(timestamp) * 1000,
           from: author,
           to: ritualSocialContract.address,
           status: 'success',
@@ -122,17 +129,20 @@ export function usePost(postId?: string) {
     queryKey: ['post', postId, address],
     queryFn: async (): Promise<PostRecord> => {
       const id = BigInt(postId!);
-      const struct = (await publicClient!.readContract({
+      const rawStruct = (await publicClient!.readContract({
         address: ritualSocialContract.address,
         abi: ritualSocialContract.abi,
         functionName: 'posts',
         args: [id],
-      })) as any;
+      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
 
-      if (!struct.exists) throw new Error('Postingan tidak ditemukan');
+      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists] =
+        rawStruct;
+
+      if (!exists) throw new Error('Post not found');
 
       const [profile, likedByMe, repostedByMe, meta] = await Promise.all([
-        fetchProfile(publicClient!, struct.author),
+        fetchProfile(publicClient!, author as `0x${string}`),
         address
           ? (publicClient!.readContract({
               address: ritualSocialContract.address,
@@ -149,7 +159,7 @@ export function usePost(postId?: string) {
               args: [id, address],
             }) as Promise<boolean>)
           : Promise.resolve(false),
-        fetchPostMetadata(struct.contentURI).catch(() => ({ caption: '(gagal memuat metadata)', images: [] }) as any),
+        fetchPostMetadata(contentURI).catch(() => ({ caption: '(failed to load metadata)', images: [] }) as any),
       ]);
 
       return {
@@ -157,18 +167,18 @@ export function usePost(postId?: string) {
         author: profile,
         images: meta.images ?? [],
         caption: meta.caption ?? '',
-        createdAt: Number(struct.timestamp) * 1000,
-        likeCount: Number(struct.likeCount),
-        commentCount: Number(struct.commentCount),
-        repostCount: Number(struct.repostCount),
+        createdAt: Number(timestamp) * 1000,
+        likeCount: Number(likeCount),
+        commentCount: Number(commentCount),
+        repostCount: Number(repostCount),
         viewCount: 0,
-        isRepost: struct.isRepost,
-        originalPostId: struct.isRepost ? String(struct.originalPostId) : undefined,
+        isRepost,
+        originalPostId: isRepost ? String(originalPostId) : undefined,
         onChain: {
           txHash: '0x0' as `0x${string}`,
           blockNumber: 0,
-          timestamp: Number(struct.timestamp) * 1000,
-          from: struct.author,
+          timestamp: Number(timestamp) * 1000,
+          from: author as `0x${string}`,
           to: ritualSocialContract.address,
           status: 'success',
         },

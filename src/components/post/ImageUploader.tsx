@@ -28,11 +28,11 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
 
     for (const file of incoming) {
       if (!ACCEPTED.includes(file.type)) {
-        setError('Format tidak didukung — gunakan JPG, PNG, WEBP, atau GIF.');
+        setError('Unsupported format — use JPG, PNG, WEBP, or GIF.');
         return;
       }
       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        setError(`Ukuran file maksimum ${MAX_SIZE_MB}MB.`);
+        setError(`Max file size is ${MAX_SIZE_MB}MB.`);
         return;
       }
     }
@@ -76,7 +76,7 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
           disabled={files.length >= MAX_IMAGES}
           className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ritual-400 transition hover:bg-ritual-900/40 disabled:opacity-40"
         >
-          <ImagePlus size={16} /> Foto ({files.length}/{MAX_IMAGES})
+          <ImagePlus size={16} /> Photo ({files.length}/{MAX_IMAGES})
         </button>
       </div>
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}

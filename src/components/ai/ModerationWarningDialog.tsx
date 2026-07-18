@@ -3,10 +3,10 @@ import type { ModerationOutput } from '@/types';
 
 const LABELS: Record<string, string> = {
   spam: 'Spam',
-  scam: 'Penipuan (Scam)',
+  scam: 'Scam',
   phishing: 'Phishing',
-  toxic: 'Konten Toksik',
-  nsfw: 'Konten NSFW',
+  toxic: 'Toxic Content',
+  nsfw: 'NSFW Content',
 };
 
 export function ModerationWarningDialog({
@@ -24,8 +24,8 @@ export function ModerationWarningDialog({
         <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-500/10 text-red-400">
           <ShieldAlert size={20} />
         </div>
-        <h3 className="font-display text-lg text-white">AI Ritual mendeteksi potensi pelanggaran</h3>
-        <p className="mt-1 text-sm text-mist-dim">{result.reason ?? 'Konten ini cocok dengan pola yang berisiko.'}</p>
+        <h3 className="font-display text-lg text-white">AI Ritual flagged a potential violation</h3>
+        <p className="mt-1 text-sm text-mist-dim">{result.reason ?? 'This content matches a risky pattern.'}</p>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {result.categories.map((c) => (
@@ -37,13 +37,13 @@ export function ModerationWarningDialog({
 
         <div className="mt-5 flex gap-3">
           <button className="ritual-btn-ghost flex-1" onClick={onCancel}>
-            Edit postingan
+            Edit post
           </button>
           <button
             className="flex-1 rounded-full border border-red-500/40 px-5 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10"
             onClick={onPublishAnyway}
           >
-            Tetap publikasikan
+            Publish anyway
           </button>
         </div>
       </div>

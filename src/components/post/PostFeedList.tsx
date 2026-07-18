@@ -14,8 +14,8 @@ export function PostFeedList({
   isError,
   onRetry,
   onRefresh,
-  emptyTitle = 'Belum ada postingan',
-  emptyDescription = 'Jadilah yang pertama memulai percakapan di Ritual Social.',
+  emptyTitle = 'No posts yet',
+  emptyDescription = 'Be the first to start the conversation on Ritual Social.',
 }: {
   posts: PostRecord[];
   isLoading: boolean;
@@ -81,7 +81,7 @@ export function PostFeedList({
       {(pulling || refreshing) && (
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-ritual-400">
           <RotateCw size={13} className={refreshing ? 'animate-spin' : ''} />
-          {refreshing ? 'Memuat ulang…' : 'Lepas untuk refresh'}
+          {refreshing ? 'Refreshing…' : 'Release to refresh'}
         </div>
       )}
       {posts.slice(0, visibleCount).map((post) => (

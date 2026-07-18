@@ -20,21 +20,21 @@ export function ProfilePage() {
   );
 
   if (isLoading) return <SkeletonProfileHeader />;
-  if (isError || !profile) return <ErrorState message="Profil tidak ditemukan." onRetry={() => refetch()} />;
+  if (isError || !profile) return <ErrorState message="Profile not found." onRetry={() => refetch()} />;
 
   return (
     <div>
       <ProfileHeader profile={profile} onEdit={() => setEditOpen(true)} onFollowChange={() => refetch()} />
 
       <div className="border-t border-ash-200">
-        <div className="border-b border-ash-200 px-4 py-3 text-sm font-semibold text-mist-light">Postingan</div>
+        <div className="border-b border-ash-200 px-4 py-3 text-sm font-semibold text-mist-light">Posts</div>
         <PostFeedList
           posts={authorPosts}
           isLoading={feedLoading}
           isError={feedError}
           onRetry={() => refetchFeed()}
-          emptyTitle="Belum ada postingan"
-          emptyDescription={`@${profile.username} belum memposting apa pun.`}
+          emptyTitle="No posts yet"
+          emptyDescription={`@${profile.username} hasn’t posted anything yet.`}
         />
       </div>
 

@@ -76,7 +76,7 @@ export function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit(query)}
-            placeholder='Cari dengan bahasa natural: "posting tentang AI minggu ini"'
+            placeholder='Search in natural language: "posts about AI this week"'
             className="w-full rounded-full border border-ash-200 bg-ash-100/60 py-2.5 pl-10 pr-9 text-sm text-mist-light placeholder:text-mist-dim focus:border-ritual-500 focus:outline-none"
           />
           {query && (
@@ -90,7 +90,7 @@ export function SearchPage() {
         </div>
         {aiLoading && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-ritual-400">
-            <Loader2 size={12} className="animate-spin" /> AI Ritual sedang memahami konteks pencarianmu…
+            <Loader2 size={12} className="animate-spin" /> AI Ritual is understanding the context of your search…
           </p>
         )}
         {aiResult?.output.explanation && !aiLoading && (
@@ -136,8 +136,8 @@ export function SearchPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyTitle={`Tidak ada hasil untuk "${submitted}"`}
-          emptyDescription="Coba kata kunci lain atau gunakan bahasa natural."
+          emptyTitle={`No results for "${submitted}"`}
+          emptyDescription="Try different keywords or use natural language."
         />
       )}
     </div>

@@ -6,7 +6,7 @@ export function ExplorerLink({ txHash, className }: { txHash: string; className?
   if (!url) {
     return (
       <span className={`inline-flex items-center gap-1 text-xs text-mist-dim ${className ?? ''}`} title={txHash}>
-        Explorer belum dikonfigurasi
+        Explorer not configured
       </span>
     );
   }
@@ -17,7 +17,7 @@ export function ExplorerLink({ txHash, className }: { txHash: string; className?
       rel="noreferrer"
       className={`inline-flex items-center gap-1 text-xs font-mono text-ritual-400 transition hover:text-ritual-300 hover:underline ${className ?? ''}`}
     >
-      Lihat di Ritual Explorer <ExternalLink size={12} />
+      View on Ritual Explorer <ExternalLink size={12} />
     </a>
   );
 }

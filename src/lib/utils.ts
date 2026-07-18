@@ -11,27 +11,27 @@ export function truncateAddress(address?: string, chars = 4): string {
 
 export function formatRelativeTime(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if (seconds < 60) return `${seconds}d`;
+  if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}j`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}h`;
+  if (days < 7) return `${days}d`;
   const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks}mg`;
+  if (weeks < 4) return `${weeks}w`;
   const date = new Date(timestamp);
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export function formatJoinDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
 export function formatCount(count: number): string {
   if (count < 1000) return String(count);
-  if (count < 1_000_000) return `${(count / 1000).toFixed(count % 1000 === 0 ? 0 : 1)}rb`;
-  return `${(count / 1_000_000).toFixed(1)}jt`;
+  if (count < 1_000_000) return `${(count / 1000).toFixed(count % 1000 === 0 ? 0 : 1)}K`;
+  return `${(count / 1_000_000).toFixed(1)}M`;
 }
 
 const HASHTAG_RE = /#(\w+)/g;

@@ -76,7 +76,7 @@ export function ProfileHeader({
             />
             <span className="text-xs text-mist-dim">RITUAL</span>
             <button onClick={handleTip} disabled={tipPending} className="ritual-btn ml-auto px-4 py-1.5 text-xs">
-              Kirim Tip
+              Send Tip
             </button>
           </div>
         )}
@@ -108,7 +108,7 @@ export function ProfileHeader({
             </a>
           )}
           <span className="flex items-center gap-1">
-            <Calendar size={14} /> Bergabung {formatJoinDate(profile.joinedAt)}
+            <Calendar size={14} /> Joined {formatJoinDate(profile.joinedAt)}
           </span>
         </div>
 
@@ -123,7 +123,7 @@ export function ProfileHeader({
           </span>
           <span>
             <strong className="text-mist-light">{formatCount(profile.postCount)}</strong>{' '}
-            <span className="text-mist-dim">Postingan</span>
+            <span className="text-mist-dim">Posts</span>
           </span>
         </div>
       </div>

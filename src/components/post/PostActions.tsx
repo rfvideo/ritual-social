@@ -31,7 +31,7 @@ export function PostActions({ post }: { post: PostRecord }) {
       navigator.share({ url, title: 'Ritual Social' }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url);
-      toast.success('Link disalin');
+      toast.success('Link copied');
     }
   }
 
@@ -49,7 +49,7 @@ export function PostActions({ post }: { post: PostRecord }) {
         </Link>
 
         <button
-          onClick={() => (post.repostedByMe ? toast('Kamu sudah repost ini') : setConfirming('repost'))}
+          onClick={() => (post.repostedByMe ? toast('You already reposted this') : setConfirming('repost'))}
           className={cn(
             'group flex items-center gap-1.5 rounded-full px-2 py-1 transition hover:text-ritual-300',
             post.repostedByMe && 'text-ritual-400',
@@ -60,7 +60,7 @@ export function PostActions({ post }: { post: PostRecord }) {
         </button>
 
         <button
-          onClick={() => (post.likedByMe ? toast('Kamu sudah like ini') : setConfirming('like'))}
+          onClick={() => (post.likedByMe ? toast('You already liked this') : setConfirming('like'))}
           className={cn(
             'group flex items-center gap-1.5 rounded-full px-2 py-1 transition hover:text-red-400',
             post.likedByMe && 'text-red-400',
@@ -82,8 +82,8 @@ export function PostActions({ post }: { post: PostRecord }) {
 
       <ConfirmTxDialog
         open={confirming !== null}
-        title={confirming === 'like' ? 'Konfirmasi Like' : 'Konfirmasi Repost'}
-        description="Aksi ini adalah transaksi nyata di Ritual Chain dan tidak bisa dibatalkan setelah dikonfirmasi."
+        title={confirming === 'like' ? 'Confirm Like' : 'Confirm Repost'}
+        description="This is a real transaction on Ritual Chain and cannot be undone once confirmed."
         stage={stage}
         onConfirm={handleConfirm}
         onClose={() => {

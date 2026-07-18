@@ -31,7 +31,7 @@ export function TranslateButton({ text }: { text: string }) {
         className="flex items-center gap-1 text-xs font-medium text-ritual-400 transition hover:text-ritual-300"
       >
         {loading ? <Loader2 size={12} className="animate-spin" /> : <Globe2 size={12} />}
-        {showTranslated ? 'Lihat Teks Asli' : 'Terjemahkan'}
+        {showTranslated ? 'Show Original' : 'Translate'}
       </button>
     </div>
   );

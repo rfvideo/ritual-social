@@ -44,7 +44,7 @@ export function ExplorePage() {
         <section>
           <h2 className="mb-2 text-sm font-semibold text-mist-light">Latest Image</h2>
           {latestImages.length === 0 ? (
-            <EmptyState title="Belum ada gambar" icon={<ImageOff size={18} />} />
+            <EmptyState title="No images yet" icon={<ImageOff size={18} />} />
           ) : (
             <div className="grid grid-cols-3 gap-1.5">
               {latestImages.map(({ img, postId }, i) => (

@@ -34,9 +34,15 @@ export async function fetchProfile(
     abi: ritualSocialContract.abi,
     functionName: 'profiles',
     args: [address],
-  })) as any;
+  })) as unknown as [string, bigint, bigint, bigint, bigint, boolean];
 
-  const metadata = await fetchProfileMetadata(struct.metadataURI as string);
+  // Solidity's auto-generated getter for `mapping(address => Profile) public profiles`
+  // returns the struct's fields as a positional tuple (metadataURI, joinedAt,
+  // postCount, followerCount, followingCount, registered) — NOT a named object —
+  // so we destructure by position rather than by field name.
+  const [metadataURI, joinedAt, postCount, followerCount, followingCount] = struct;
+
+  const metadata = await fetchProfileMetadata(metadataURI);
 
   return {
     address,
@@ -47,10 +53,10 @@ export async function fetchProfile(
     location: metadata.location,
     avatarURI: metadata.avatarURI,
     bannerURI: metadata.bannerURI,
-    joinedAt: Number(struct.joinedAt) * 1000,
-    followerCount: Number(struct.followerCount),
-    followingCount: Number(struct.followingCount),
-    postCount: Number(struct.postCount),
+    joinedAt: Number(joinedAt) * 1000,
+    followerCount: Number(followerCount),
+    followingCount: Number(followingCount),
+    postCount: Number(postCount),
   };
 }
 
@@ -96,17 +102,17 @@ export function useUpdateProfile() {
           functionName: 'updateProfile',
           args: [metadataURI],
         });
-        toast.loading('Menyimpan profil on-chain…', { id: hash });
+        toast.loading('Saving profile on-chain…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
         if (receipt.status === 'success') {
-          toast.success('Profil berhasil diperbarui', { id: hash });
+          toast.success('Profile updated successfully', { id: hash });
           queryClient.invalidateQueries({ queryKey: ['profile', address] });
           return true;
         }
-        toast.error('Transaksi revert', { id: hash });
+        toast.error('Transaction reverted', { id: hash });
         return false;
       } catch (err: any) {
-        toast.error(err?.shortMessage ?? 'Transaksi gagal atau ditolak');
+        toast.error(err?.shortMessage ?? 'Transaction failed or rejected');
         return false;
       } finally {
         setPending(false);

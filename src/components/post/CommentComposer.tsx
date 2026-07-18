@@ -24,7 +24,7 @@ export function CommentComposer({ postId }: { postId: string }) {
       setPendingURI(contentURI);
       setConfirmOpen(true);
     } catch (err: any) {
-      toast.error(err.message ?? 'Gagal mengunggah komentar');
+      toast.error(err.message ?? 'Failed to upload comment');
     } finally {
       setUploading(false);
     }
@@ -42,7 +42,7 @@ export function CommentComposer({ postId }: { postId: string }) {
   if (!isConnected) {
     return (
       <div className="flex items-center justify-between gap-3 border-b border-ash-200 px-4 py-4">
-        <p className="text-sm text-mist-dim">Connect wallet untuk berkomentar.</p>
+        <p className="text-sm text-mist-dim">Connect your wallet to comment.</p>
         <ConnectWalletButton />
       </div>
     );
@@ -56,13 +56,13 @@ export function CommentComposer({ postId }: { postId: string }) {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Tulis balasan…"
+            placeholder="Write a reply…"
             rows={2}
             className="w-full resize-none bg-transparent text-sm text-mist-light placeholder:text-mist-dim focus:outline-none"
           />
           <div className="mt-2 flex justify-end">
             <button onClick={handleSend} disabled={!body.trim() || uploading} className="ritual-btn px-4 py-2 text-xs">
-              {uploading ? <Loader2 size={13} className="animate-spin" /> : 'Balas'}
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : 'Reply'}
             </button>
           </div>
         </div>
@@ -70,8 +70,8 @@ export function CommentComposer({ postId }: { postId: string }) {
 
       <ConfirmTxDialog
         open={confirmOpen}
-        title="Konfirmasi Komentar"
-        description="Komentar akan tampil setelah transaksi berhasil dikonfirmasi di Ritual Chain."
+        title="Confirm Comment"
+        description="Your comment will appear once the transaction is confirmed on Ritual Chain."
         stage={stage}
         onConfirm={handleConfirm}
         onClose={() => {

@@ -35,7 +35,7 @@ export function EditProfileModal({
 
   async function handleSave() {
     if (!username.trim()) {
-      toast.error('Username tidak boleh kosong');
+      toast.error('Username cannot be empty');
       return;
     }
     setSaving(true);
@@ -54,7 +54,7 @@ export function EditProfileModal({
       const ok = await updateProfile(metadataURI);
       if (ok) onClose();
     } catch (err: any) {
-      toast.error(err.message ?? 'Gagal menyimpan profil');
+      toast.error(err.message ?? 'Failed to save profile');
     } finally {
       setSaving(false);
     }
@@ -131,11 +131,11 @@ export function EditProfileModal({
                   className="w-full resize-none rounded-xl border border-ash-300 bg-void-200 px-3 py-2 text-sm text-mist-light focus:border-ritual-500 focus:outline-none"
                 />
               </div>
-              <Field label="Website" value={website} onChange={setWebsite} maxLength={100} />
+              <Field label="Website / X / Other link" value={website} onChange={setWebsite} maxLength={100} />
               <Field label="Location" value={location} onChange={setLocation} maxLength={50} />
 
               <button onClick={handleSave} disabled={busy} className="ritual-btn w-full">
-                {busy ? <Loader2 size={16} className="animate-spin" /> : 'Simpan Perubahan'}
+                {busy ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}
               </button>
             </div>
           </motion.div>

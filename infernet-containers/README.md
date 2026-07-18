@@ -36,6 +36,33 @@ This starts `router` on :4000, plus `translate`, `caption`, and `moderate` on
 internal ports. Set `INFERNET_ROUTER_URL=http://localhost:4000` in your
 frontend `.env` to use it.
 
+**About `caption`:** this container runs a real open-source vision model
+(BLIP, `Salesforce/blip-image-captioning-base`) — it actually looks at the
+image and describes it, not a canned string. The model downloads (~1GB) and
+loads into memory on the **first** request after the container starts, which
+can take 30-60s; every request after that is fast (1-3s on CPU). To avoid a
+slow first real user request, "warm up" the container right after deploying:
+
+```bash
+curl -X POST http://your-host:8000/job \
+  -H "Content-Type: application/json" \
+  -d '{"input":{"imageURIs":["https://picsum.photos/400"]}}'
+```
+
+Netlify Functions on the free plan time out around 10s — if your caption
+requests are timing out from the app (rather than the container itself
+being slow), that's the Netlify-side limit, not the container. Either warm
+the container up before traffic hits it, or move `ai-caption` to a Netlify
+plan/function type with a longer timeout.
+
+## Where to host this
+
+Any place that can run a Docker container and stays reachable over HTTP works:
+a small VPS (DigitalOcean, Hetzner, etc), Railway, Render, or Fly.io all have
+usable free/cheap tiers. Point `INFERNET_ROUTER_URL` at wherever `router`
+ends up — the containers don't need to be public individually, only `router`
+does (it talks to the others over the private Docker network).
+
 ## Migrating to real Ritual infrastructure
 
 When Ritual Chain / Infernet access is available to you beyond a private

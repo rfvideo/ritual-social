@@ -43,26 +43,58 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-/** Uploads images + caption to IPFS via the server-side pinning function
- *  and returns the metadata CID to pass into `createPost`. */
-export async function uploadPostContent(params: {
-  caption: string;
-  images: File[];
-  hashtags?: string[];
-  mentions?: string[];
-}): Promise<string> {
-  const images = await Promise.all(
-    params.images.map(async (file) => ({
+async function filesToPayload(files: File[]) {
+  return Promise.all(
+    files.map(async (file) => ({
       base64: await fileToBase64(file),
       mimeType: file.type,
       filename: file.name,
     })),
   );
+}
+
+/** Pins just the images and returns their ipfs:// URIs — used right after image
+ *  selection so AI captioning has real, fetchable image URLs to analyze before
+ *  the post is actually published. */
+export async function uploadImagesOnly(files: File[]): Promise<string[]> {
+  if (files.length === 0) return [];
+  const images = await filesToPayload(files);
+  const res = await fetch('/.netlify/functions/ipfs-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imagesOnly: true, images }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? 'Failed to upload image to IPFS');
+  }
+  const { imageURIs } = await res.json();
+  return imageURIs;
+}
+
+/** Uploads images + caption to IPFS via the server-side pinning function
+ *  and returns the metadata CID to pass into `createPost`. Pass
+ *  `existingImageURIs` (from `uploadImagesOnly`) to avoid re-uploading images
+ *  that were already pinned for AI captioning. */
+export async function uploadPostContent(params: {
+  caption: string;
+  images: File[];
+  existingImageURIs?: string[];
+  hashtags?: string[];
+  mentions?: string[];
+}): Promise<string> {
+  const images = params.existingImageURIs?.length ? [] : await filesToPayload(params.images);
 
   const res = await fetch('/.netlify/functions/ipfs-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ caption: params.caption, images, hashtags: params.hashtags, mentions: params.mentions }),
+    body: JSON.stringify({
+      caption: params.caption,
+      images,
+      existingImageURIs: params.existingImageURIs,
+      hashtags: params.hashtags,
+      mentions: params.mentions,
+    }),
   });
 
   if (!res.ok) {

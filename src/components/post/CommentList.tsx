@@ -26,7 +26,7 @@ export function CommentList({ postId }: { postId: string }) {
             className="flex items-center gap-1.5 text-sm text-ritual-400 hover:text-ritual-300"
           >
             {summarizing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-            Ringkas dengan AI
+            Summarize with AI
           </button>
         </div>
       )}
@@ -44,10 +44,10 @@ export function CommentList({ postId }: { postId: string }) {
         </>
       )}
 
-      {isError && <EmptyState title="Gagal memuat komentar" icon={<MessageCircle size={20} />} />}
+      {isError && <EmptyState title="Failed to load comments" icon={<MessageCircle size={20} />} />}
 
       {!isLoading && comments?.length === 0 && (
-        <EmptyState title="Belum ada komentar" description="Jadilah yang pertama membalas." icon={<MessageCircle size={20} />} />
+        <EmptyState title="No comments yet" description="Be the first to reply." icon={<MessageCircle size={20} />} />
       )}
 
       {comments?.map((c) => (

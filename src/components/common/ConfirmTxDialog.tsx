@@ -14,10 +14,10 @@ interface ConfirmTxDialogProps {
 
 const STAGE_LABEL: Record<TxStage, string> = {
   idle: '',
-  'awaiting-wallet': 'Menunggu konfirmasi di wallet…',
-  pending: 'Transaksi terkirim, menunggu block…',
-  confirmed: 'Berhasil dikonfirmasi on-chain',
-  failed: 'Transaksi gagal',
+  'awaiting-wallet': 'Waiting for wallet confirmation…',
+  pending: 'Transaction sent, waiting for block…',
+  confirmed: 'Confirmed on-chain',
+  failed: 'Transaction failed',
 };
 
 export function ConfirmTxDialog({ open, title, description, stage, onConfirm, onClose }: ConfirmTxDialogProps) {
@@ -48,7 +48,7 @@ export function ConfirmTxDialog({ open, title, description, stage, onConfirm, on
             <p className="mt-1 text-sm text-mist-dim">{description}</p>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl border border-ash-200 bg-void-200 px-4 py-3">
-              <span className="text-sm text-mist">Biaya transaksi</span>
+              <span className="text-sm text-mist">Transaction fee</span>
               <span className="font-mono text-sm font-semibold text-ritual-300">{ACTION_FEE_ETH} RITUAL</span>
             </div>
 
@@ -62,10 +62,10 @@ export function ConfirmTxDialog({ open, title, description, stage, onConfirm, on
 
             <div className="mt-5 flex gap-3">
               <button className="ritual-btn-ghost flex-1" onClick={onClose} disabled={isBusy}>
-                Batal
+                Cancel
               </button>
               <button className="ritual-btn flex-1" onClick={onConfirm} disabled={isBusy || stage === 'confirmed'}>
-                {isBusy ? <Loader2 size={15} className="animate-spin" /> : 'Konfirmasi'}
+                {isBusy ? <Loader2 size={15} className="animate-spin" /> : 'Confirm'}
               </button>
             </div>
           </motion.div>

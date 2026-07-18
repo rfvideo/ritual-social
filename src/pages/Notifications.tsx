@@ -18,7 +18,7 @@ export function NotificationsPage() {
 
       {!isConnected ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-sm text-mist-dim">Connect wallet untuk melihat notifikasi.</p>
+          <p className="text-sm text-mist-dim">Connect your wallet to see notifications.</p>
           <ConnectWalletButton />
         </div>
       ) : isLoading ? (
@@ -28,7 +28,7 @@ export function NotificationsPage() {
       ) : notifications && notifications.length > 0 ? (
         notifications.map((n) => <NotificationItem key={n.id} notification={n} />)
       ) : (
-        <EmptyState title="Belum ada notifikasi" description="Aktivitas seperti like, komentar, dan follow akan muncul di sini." icon={<Bell size={20} />} />
+        <EmptyState title="No notifications yet" description="Activity like likes, comments, and follows will show up here." icon={<Bell size={20} />} />
       )}
     </div>
   );

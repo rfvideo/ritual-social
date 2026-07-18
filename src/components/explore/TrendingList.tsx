@@ -18,10 +18,10 @@ export function TrendingList({ posts, limit = 5 }: { posts: PostRecord[]; limit?
   return (
     <div className="glass-panel rounded-2xl p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-        <TrendingUp size={16} className="text-ritual-400" /> Trending di Ritual
+        <TrendingUp size={16} className="text-ritual-400" /> Trending on Ritual
       </div>
       {trending.length === 0 ? (
-        <p className="text-sm text-mist-dim">Belum ada tren — jadilah yang pertama memulai percakapan.</p>
+        <p className="text-sm text-mist-dim">No trends yet — be the first to start the conversation.</p>
       ) : (
         <ul className="space-y-3">
           {trending.map(([tag, count], i) => (
@@ -29,7 +29,7 @@ export function TrendingList({ posts, limit = 5 }: { posts: PostRecord[]; limit?
               <Link to={`/search?q=%23${tag}`} className="group block">
                 <p className="text-xs text-mist-dim">#{i + 1} · Trending</p>
                 <p className="font-medium text-mist-light group-hover:text-ritual-300">#{tag}</p>
-                <p className="text-xs text-mist-dim">{formatCount(count)} postingan</p>
+                <p className="text-xs text-mist-dim">{formatCount(count)} posts</p>
               </Link>
             </li>
           ))}

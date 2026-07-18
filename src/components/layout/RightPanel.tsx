@@ -23,7 +23,7 @@ export function RightPanel() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari di Ritual Social (bahasa natural OK)"
+          placeholder="Search Ritual Social (natural language OK)"
           className="w-full rounded-full border border-ash-200 bg-ash-100/60 py-2.5 pl-10 pr-4 text-sm text-mist-light placeholder:text-mist-dim focus:border-ritual-500 focus:outline-none focus:ring-1 focus:ring-ritual-500"
         />
       </form>
@@ -32,7 +32,7 @@ export function RightPanel() {
       <SuggestedUsers posts={posts} />
 
       <p className="px-2 text-xs text-mist-dim">
-        Ritual Social · dibangun di atas Ritual Chain. Semua transaksi dapat diverifikasi di Ritual Explorer.
+        Ritual Social · built on Ritual Chain. Every transaction can be verified on Ritual Explorer.
       </p>
     </aside>
   );

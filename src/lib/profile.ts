@@ -48,7 +48,7 @@ export async function uploadProfileMetadata(input: ProfileUpdateInput): Promise<
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? 'Gagal menyimpan profil ke IPFS');
+    throw new Error(body.error ?? 'Failed to save profile to IPFS');
   }
 
   const { metadataURI } = await res.json();
