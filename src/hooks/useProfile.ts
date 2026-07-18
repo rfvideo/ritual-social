@@ -15,7 +15,13 @@ async function fetchProfileMetadata(uri: string): Promise<ProfileMetadata> {
   }
   if (profileMetaCache.has(uri)) return profileMetaCache.get(uri)!;
   try {
-    const res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(6000) });
+    let res: Response;
+    try {
+      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(15000) });
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(15000) });
+    }
     if (!res.ok) throw new Error('metadata fetch failed');
     const data = (await res.json()) as ProfileMetadata;
     profileMetaCache.set(uri, data);
