@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  router:
+    build: ./router
+    ports:
+      - '4000:4000'
+    environment:
+      TRANSLATE_URL: http://translate:8000
+      CAPTION_URL: http://caption:8000
+      MODERATE_URL: http://moderate:8000
+    depends_on:
+      - translate
+      - caption
+      - moderate
+
+  translate:
+    build: ./translate
+    expose:
+      - '8000'
+
+  caption:
+    build: ./caption
+    expose:
+      - '8000'
+
+  moderate:
+    build: ./moderate
+    expose:
+      - '8000'

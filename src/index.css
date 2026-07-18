@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-ash-200;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-void text-mist-light font-body antialiased;
+    background-image: radial-gradient(circle at 15% -10%, rgba(58, 240, 117, 0.08), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(58, 240, 117, 0.05), transparent 35%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(58, 240, 117, 0.3);
+    color: #fff;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a312c;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a4239;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-ash/60 backdrop-blur-xl border border-ash-200 shadow-edge;
+  }
+  .ritual-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ritual-gradient px-5 py-2.5
+      font-mono text-sm font-semibold tracking-tight text-void
+      transition-all duration-200 hover:shadow-glow active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .ritual-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ash-300 px-5 py-2.5
+      font-mono text-sm font-medium text-mist-light transition-all duration-200
+      hover:border-ritual-500 hover:text-ritual-300 hover:shadow-glow-sm active:scale-[0.97];
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-ash-100;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(58, 240, 117, 0.06), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+}

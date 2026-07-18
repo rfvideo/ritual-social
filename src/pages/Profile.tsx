@@ -1,0 +1,44 @@
+import { useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
+import { useFeed } from '@/hooks/usePosts';
+import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { EditProfileModal } from '@/components/profile/EditProfileModal';
+import { PostFeedList } from '@/components/post/PostFeedList';
+import { SkeletonProfileHeader } from '@/components/common/Skeleton';
+import { ErrorState } from '@/components/common/States';
+
+export function ProfilePage() {
+  const { address } = useParams<{ address: string }>();
+  const { data: profile, isLoading, isError, refetch } = useProfile(address as `0x${string}`);
+  const { data: allPosts = [], isLoading: feedLoading, isError: feedError, refetch: refetchFeed } = useFeed();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const authorPosts = useMemo(
+    () => allPosts.filter((p) => p.author.address.toLowerCase() === address?.toLowerCase()),
+    [allPosts, address],
+  );
+
+  if (isLoading) return <SkeletonProfileHeader />;
+  if (isError || !profile) return <ErrorState message="Profil tidak ditemukan." onRetry={() => refetch()} />;
+
+  return (
+    <div>
+      <ProfileHeader profile={profile} onEdit={() => setEditOpen(true)} onFollowChange={() => refetch()} />
+
+      <div className="border-t border-ash-200">
+        <div className="border-b border-ash-200 px-4 py-3 text-sm font-semibold text-mist-light">Postingan</div>
+        <PostFeedList
+          posts={authorPosts}
+          isLoading={feedLoading}
+          isError={feedError}
+          onRetry={() => refetchFeed()}
+          emptyTitle="Belum ada postingan"
+          emptyDescription={`@${profile.username} belum memposting apa pun.`}
+        />
+      </div>
+
+      <EditProfileModal open={editOpen} profile={profile} onClose={() => setEditOpen(false)} />
+    </div>
+  );
+}

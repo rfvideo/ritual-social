@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.local
+.netlify/
+.DS_Store
+*.log
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+tsconfig.tsbuildinfo
