@@ -9,7 +9,18 @@ export function MobileHeader() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ritual-gradient">
           <Sparkles size={16} className="text-void" />
         </div>
-        <span className="font-display text-base text-white">Ritual Social</span>
+        <div className="flex flex-col leading-tight">
+          <span className="font-display text-base text-white">Ritual Social</span>
+          <a
+            href="https://x.com/raupee_"
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] text-mist-dim hover:text-ritual-400"
+          >
+            by Raupee
+          </a>
+        </div>
       </Link>
       <ConnectWalletButton />
     </header>
