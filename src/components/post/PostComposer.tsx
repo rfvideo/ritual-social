@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles, X, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import toast from 'react-hot-toast';
 import { Avatar } from '@/components/common/Avatar';
 import { ImageUploader } from './ImageUploader';
 import { ModerationWarningDialog } from '@/components/ai/ModerationWarningDialog';
 import { ConfirmTxDialog } from '@/components/common/ConfirmTxDialog';
-import { useAICaption, useModeration } from '@/hooks/useAI';
+import { useModeration } from '@/hooks/useAI';
 import { useCreatePost } from '@/hooks/useRitualSocial';
 import { useInvalidateFeed } from '@/hooks/usePosts';
 import { uploadImagesOnly, uploadPostContent } from '@/lib/ipfs';
@@ -28,14 +28,10 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingContentURI, setPendingContentURI] = useState<string | null>(null);
 
-  const { run: runCaption, loading: captionLoading } = useAICaption();
   const { run: runModeration, loading: moderationLoading } = useModeration();
   const { createPost, stage, reset } = useCreatePost();
   const invalidateFeed = useInvalidateFeed();
 
-  // Pin images to IPFS as soon as they're selected — this gives the AI
-  // caption container a real, fetchable URL to actually look at, instead of
-  // a local filename it could never analyze.
   useEffect(() => {
     let cancelled = false;
     async function pinImages() {
@@ -70,23 +66,6 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
     setPendingContentURI(null);
     reset();
     onClose();
-  }
-
-  async function handleSuggestCaption() {
-    if (images.length === 0) {
-      toast.error('Add a photo first so AI can write a caption for it.');
-      return;
-    }
-    if (imagesUploading || uploadedImageURIs.length === 0) {
-      toast.error('Still uploading your image(s) — try again in a moment.');
-      return;
-    }
-    const job = await runCaption({ imageURIs: uploadedImageURIs });
-    if (job?.output.caption) {
-      setCaption((prev) => (prev.trim() ? prev : job.output.caption));
-    } else if (job) {
-      toast.error('AI captioning isn\u2019t connected yet — see infernet-containers/README.md to enable it.');
-    }
   }
 
   async function proceedToPublish() {
@@ -185,15 +164,7 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-ash-200 pt-3">
-                  <button
-                    onClick={handleSuggestCaption}
-                    disabled={captionLoading || images.length === 0 || imagesUploading}
-                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ritual-400 transition hover:bg-ritual-900/40 disabled:opacity-40"
-                  >
-                    {captionLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    Generate Caption with AI
-                  </button>
+                <div className="mt-3 flex items-center justify-end border-t border-ash-200 pt-3">
                   <span className={`text-xs font-mono ${overLimit ? 'text-red-400' : 'text-mist-dim'}`}>
                     {caption.length}/{MAX_CHARS}
                   </span>
@@ -235,4 +206,4 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
       />
     </AnimatePresence>
   );
-}
+  }
