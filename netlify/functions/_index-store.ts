@@ -14,7 +14,11 @@ export interface IndexedPost {
 }
 
 function getIndexStore() {
-  return getStore(STORE_NAME);
+  return getStore({
+    name: STORE_NAME,
+    siteID: process.env.NETLIFY_SITE_ID!,
+    token: process.env.NETLIFY_BLOBS_TOKEN!,
+  });
 }
 
 export async function readIndex(): Promise<IndexedPost[]> {
