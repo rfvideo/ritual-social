@@ -9,6 +9,20 @@ export function truncateAddress(address?: string, chars = 4): string {
   return `${address.slice(0, chars + 2)}…${address.slice(-chars)}`;
 }
 
+/**
+ * Converts an on-chain timestamp to JS milliseconds. Standard EVM chains
+ * report `block.timestamp` in seconds, but this chain appears to report it
+ * already in milliseconds — multiplying by 1000 in that case lands ~1000x
+ * in the future (e.g. year 58514). This detects which convention produced
+ * a plausible "now-ish" result and uses that one instead of assuming.
+ */
+export function chainTimestampToMs(raw: bigint | number): number {
+  const n = Number(raw);
+  const asSeconds = n * 1000;
+  const YEAR_2100_MS = 4_102_444_800_000;
+  return asSeconds > YEAR_2100_MS ? n : asSeconds;
+}
+
 export function formatRelativeTime(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
   if (seconds < 60) return `${seconds}s`;
