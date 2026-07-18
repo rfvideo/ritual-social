@@ -1,5 +1,6 @@
 import { ImagePlus, X } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
+import { resizeImage } from '@/lib/image';
 
 const MAX_IMAGES = 4;
 const MAX_SIZE_MB = 8;
@@ -14,6 +15,7 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const urls = files.map((f) => URL.createObjectURL(f));
@@ -21,7 +23,7 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
 
-  function handleSelect(selected: FileList | null) {
+  async function handleSelect(selected: FileList | null) {
     if (!selected) return;
     setError(null);
     const incoming = Array.from(selected);
@@ -37,8 +39,14 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
       }
     }
 
-    const next = [...files, ...incoming].slice(0, MAX_IMAGES);
-    onChange(next);
+    setProcessing(true);
+    try {
+      const resized = await Promise.all(incoming.map((f) => resizeImage(f, 1600)));
+      const next = [...files, ...resized].slice(0, MAX_IMAGES);
+      onChange(next);
+    } finally {
+      setProcessing(false);
+    }
   }
 
   return (
@@ -73,13 +81,13 @@ export function ImageUploader({ files, onChange }: ImageUploaderProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          disabled={files.length >= MAX_IMAGES}
+          disabled={files.length >= MAX_IMAGES || processing}
           className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ritual-400 transition hover:bg-ritual-900/40 disabled:opacity-40"
         >
-          <ImagePlus size={16} /> Photo ({files.length}/{MAX_IMAGES})
+          <ImagePlus size={16} /> {processing ? 'Processing…' : `Photo (${files.length}/${MAX_IMAGES})`}
         </button>
       </div>
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
   );
-}
+                              }
