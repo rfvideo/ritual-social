@@ -2,22 +2,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePublicClient, useAccount } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { fetchPostMetadata } from '@/lib/ipfs';
+import { chainTimestampToMs } from '@/lib/utils';
 import { fetchProfile } from './useProfile';
 import type { PostRecord } from '@/types';
 import { explorerTxUrl } from '@/config/chain';
 
-/**
- * Reads PostCreated / PostReposted logs directly from Ritual Chain, then
- * hydrates each post with its on-chain struct + IPFS metadata. This is a
- * real (if unindexed) read path — for feed-scale traffic you'll want to
- * swap this for a proper indexer/subgraph, but nothing here is mocked.
- */
 async function loadFeed(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer?: `0x${string}`,
 ): Promise<PostRecord[]> {
   const latestBlock = await publicClient.getBlockNumber();
-  const lookback = 50_000n; // ~ adjust to your chain's block time / retention
+  const lookback = 50_000n;
   const fromBlock = latestBlock > lookback ? latestBlock - lookback : 0n;
 
   const logs = await publicClient.getContractEvents({
@@ -61,10 +56,6 @@ async function loadFeed(
           : Promise.resolve(false),
       ]);
 
-      // RitualSocial's auto-generated `posts(id)` getter returns the Post
-      // struct's fields as a positional tuple, not a named object — destructure
-      // by position: (author, contentURI, timestamp, likeCount, commentCount,
-      // repostCount, isRepost, originalPostId, exists).
       const [, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId] =
         rawStruct as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
 
@@ -83,7 +74,7 @@ async function loadFeed(
         author: profile,
         images,
         caption,
-        createdAt: Number(timestamp) * 1000,
+        createdAt: chainTimestampToMs(timestamp),
         likeCount: Number(likeCount),
         commentCount: Number(commentCount),
         repostCount: Number(repostCount),
@@ -93,7 +84,7 @@ async function loadFeed(
         onChain: {
           txHash: log.transactionHash!,
           blockNumber: Number(log.blockNumber),
-          timestamp: Number(timestamp) * 1000,
+          timestamp: chainTimestampToMs(timestamp),
           from: author,
           to: ritualSocialContract.address,
           status: 'success',
@@ -167,7 +158,7 @@ export function usePost(postId?: string) {
         author: profile,
         images: meta.images ?? [],
         caption: meta.caption ?? '',
-        createdAt: Number(timestamp) * 1000,
+        createdAt: chainTimestampToMs(timestamp),
         likeCount: Number(likeCount),
         commentCount: Number(commentCount),
         repostCount: Number(repostCount),
@@ -177,7 +168,7 @@ export function usePost(postId?: string) {
         onChain: {
           txHash: '0x0' as `0x${string}`,
           blockNumber: 0,
-          timestamp: Number(timestamp) * 1000,
+          timestamp: chainTimestampToMs(timestamp),
           from: author as `0x${string}`,
           to: ritualSocialContract.address,
           status: 'success',
@@ -197,4 +188,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-}
+            }
