@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePublicClient, useWriteContract, useAccount } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { resolveIpfsUri } from '@/lib/ipfs';
+import { chainTimestampToMs } from '@/lib/utils';
 import type { ProfileMetadata, UserProfile } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -36,10 +37,6 @@ export async function fetchProfile(
     args: [address],
   })) as unknown as [string, bigint, bigint, bigint, bigint, boolean];
 
-  // Solidity's auto-generated getter for `mapping(address => Profile) public profiles`
-  // returns the struct's fields as a positional tuple (metadataURI, joinedAt,
-  // postCount, followerCount, followingCount, registered) — NOT a named object —
-  // so we destructure by position rather than by field name.
   const [metadataURI, joinedAt, postCount, followerCount, followingCount] = struct;
 
   const metadata = await fetchProfileMetadata(metadataURI);
@@ -53,7 +50,7 @@ export async function fetchProfile(
     location: metadata.location,
     avatarURI: metadata.avatarURI,
     bannerURI: metadata.bannerURI,
-    joinedAt: Number(joinedAt) * 1000,
+    joinedAt: chainTimestampToMs(joinedAt),
     followerCount: Number(followerCount),
     followingCount: Number(followingCount),
     postCount: Number(postCount),
@@ -101,6 +98,8 @@ export function useUpdateProfile() {
           abi: ritualSocialContract.abi,
           functionName: 'updateProfile',
           args: [metadataURI],
+          type: 'legacy',
+          gas: 200_000n,
         });
         toast.loading('Saving profile on-chain…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -122,4 +121,4 @@ export function useUpdateProfile() {
   );
 
   return { updateProfile, pending };
-}
+    }
