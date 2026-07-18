@@ -12,7 +12,7 @@ export interface PostMetadata {
   caption: string;
   hashtags: string[];
   mentions: string[];
-  images: string[]; // ipfs:// URIs
+  images: string[];
   createdAt: number;
 }
 
@@ -35,9 +35,7 @@ export async function fetchPostMetadata(contentURI: string): Promise<PostMetadat
   metadataCache.set(contentURI, data);
   return data;
 }
-}
 
-/** Comments reuse the same {caption, images, ...} shape — `caption` holds the comment body. */
 export const fetchCommentMetadata = fetchPostMetadata;
 
 export async function uploadCommentContent(body: string): Promise<string> {
@@ -63,9 +61,6 @@ async function filesToPayload(files: File[]) {
   );
 }
 
-/** Pins just the images and returns their ipfs:// URIs — used right after image
- *  selection so AI captioning has real, fetchable image URLs to analyze before
- *  the post is actually published. */
 export async function uploadImagesOnly(files: File[]): Promise<string[]> {
   if (files.length === 0) return [];
   const images = await filesToPayload(files);
@@ -82,10 +77,6 @@ export async function uploadImagesOnly(files: File[]): Promise<string[]> {
   return imageURIs;
 }
 
-/** Uploads images + caption to IPFS via the server-side pinning function
- *  and returns the metadata CID to pass into `createPost`. Pass
- *  `existingImageURIs` (from `uploadImagesOnly`) to avoid re-uploading images
- *  that were already pinned for AI captioning. */
 export async function uploadPostContent(params: {
   caption: string;
   images: File[];
@@ -113,4 +104,4 @@ export async function uploadPostContent(params: {
   }
   const { contentURI } = await res.json();
   return contentURI;
-}
+      }
