@@ -18,13 +18,23 @@ export interface PostMetadata {
 
 const metadataCache = new Map<string, PostMetadata>();
 
+async function fetchWithRetry(url: string): Promise<Response> {
+  try {
+    return await fetch(url, { signal: AbortSignal.timeout(15000) });
+  } catch (err) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    return fetch(url, { signal: AbortSignal.timeout(15000) });
+  }
+}
+
 export async function fetchPostMetadata(contentURI: string): Promise<PostMetadata> {
   if (metadataCache.has(contentURI)) return metadataCache.get(contentURI)!;
-  const res = await fetch(resolveIpfsUri(contentURI), { signal: AbortSignal.timeout(6000) });
+  const res = await fetchWithRetry(resolveIpfsUri(contentURI));
   if (!res.ok) throw new Error(`Failed to fetch post metadata: ${res.status}`);
   const data = (await res.json()) as PostMetadata;
   metadataCache.set(contentURI, data);
   return data;
+}
 }
 
 /** Comments reuse the same {caption, images, ...} shape — `caption` holds the comment body. */
