@@ -97,7 +97,7 @@ export function useUpdateProfile() {
           abi: ritualSocialContract.abi,
           functionName: 'updateProfile',
           args: [metadataURI],
-          gas: 200_000n,
+          gas: 250_000n,
         });
         toast.loading('Saving profile on-chain…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
