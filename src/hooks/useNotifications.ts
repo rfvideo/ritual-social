@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useAccount } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { fetchProfile } from './useProfile';
+import { chainTimestampToMs } from '@/lib/utils';
 import type { NotificationRecord } from '@/types';
 
 async function loadNotifications(
@@ -53,7 +54,7 @@ async function loadNotifications(
       kind: 'like',
       actor,
       postId: args.postId.toString(),
-      createdAt: Number((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp) * 1000,
+      createdAt: chainTimestampToMs((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp),
       read: false,
     });
   }
@@ -65,12 +66,11 @@ async function loadNotifications(
       id: `follow-${log.transactionHash}-${log.logIndex}`,
       kind: 'follow',
       actor,
-      createdAt: Number((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp) * 1000,
+      createdAt: chainTimestampToMs((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp),
       read: false,
     });
   }
 
-  // Comments/reposts need the underlying post's author resolved before we know they're "for" the viewer.
   for (const log of commentLogs) {
     const args = (log as any).args;
     if (args.author.toLowerCase() === viewer.toLowerCase()) continue;
@@ -79,15 +79,16 @@ async function loadNotifications(
       abi: ritualSocialContract.abi,
       functionName: 'posts',
       args: [args.postId],
-    })) as any;
-    if (post.author.toLowerCase() !== viewer.toLowerCase()) continue;
+    })) as unknown as [string, ...unknown[]];
+    const postAuthor = post[0];
+    if (postAuthor.toLowerCase() !== viewer.toLowerCase()) continue;
     const actor = await fetchProfile(publicClient, args.author);
     notifications.push({
       id: `comment-${log.transactionHash}-${log.logIndex}`,
       kind: 'comment',
       actor,
       postId: args.postId.toString(),
-      createdAt: Number(args.timestamp) * 1000,
+      createdAt: chainTimestampToMs(args.timestamp),
       read: false,
     });
   }
@@ -100,15 +101,16 @@ async function loadNotifications(
       abi: ritualSocialContract.abi,
       functionName: 'posts',
       args: [args.postId],
-    })) as any;
-    if (post.author.toLowerCase() !== viewer.toLowerCase()) continue;
+    })) as unknown as [string, ...unknown[]];
+    const postAuthor = post[0];
+    if (postAuthor.toLowerCase() !== viewer.toLowerCase()) continue;
     const actor = await fetchProfile(publicClient, args.reposter);
     notifications.push({
       id: `repost-${log.transactionHash}-${log.logIndex}`,
       kind: 'repost',
       actor,
       postId: args.postId.toString(),
-      createdAt: Number(args.timestamp) * 1000,
+      createdAt: chainTimestampToMs(args.timestamp),
       read: false,
     });
   }
@@ -127,4 +129,4 @@ export function useNotifications() {
     staleTime: 20_000,
     refetchInterval: 45_000,
   });
-}
+                                                                  }
