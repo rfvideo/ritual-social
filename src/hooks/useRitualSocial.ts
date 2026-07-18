@@ -14,14 +14,15 @@ export interface TxResult {
 }
 
 const GAS_LIMITS: Record<string, bigint> = {
-  createPost: 350_000n,
-  likePost: 150_000n,
-  commentOnPost: 300_000n,
-  repost: 300_000n,
-  follow: 150_000n,
-  unfollow: 150_000n,
-  updateProfile: 200_000n,
-  tip: 100_000n,
+  createPost: 500_000n,
+  likePost: 250_000n,
+  commentOnPost: 400_000n,
+  repost: 400_000n,
+  follow: 200_000n,
+  unfollow: 200_000n,
+  updateProfile: 250_000n,
+  tip: 150_000n,
+
 };
 
 function useRitualAction(functionName: string) {
