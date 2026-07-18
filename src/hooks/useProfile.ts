@@ -92,7 +92,6 @@ export function useUpdateProfile() {
     async (metadataURI: string) => {
       setPending(true);
       try {
-        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
@@ -100,7 +99,6 @@ export function useUpdateProfile() {
           args: [metadataURI],
           type: 'legacy',
           gas: 200_000n,
-          gasPrice,
         });
         toast.loading('Saving profile on-chain…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -122,4 +120,4 @@ export function useUpdateProfile() {
   );
 
   return { updateProfile, pending };
-}
+                                                                                 }
