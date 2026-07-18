@@ -7,28 +7,83 @@ import { fetchProfile } from './useProfile';
 import type { PostRecord } from '@/types';
 import { explorerTxUrl } from '@/config/chain';
 
+interface PostDiscovery {
+  postId: bigint;
+  author: `0x${string}`;
+  blockNumber: bigint;
+  txHash: `0x${string}`;
+}
+
+const TARGET_POST_COUNT = 60;
+const CHUNK_SIZE = 50_000n;
+const MAX_CHUNKS = 40;
+
+async function discoverViaIndexer(): Promise<PostDiscovery[] | null> {
+  try {
+    const res = await fetch('/.netlify/functions/feed');
+    if (!res.ok) return null;
+    const { posts } = await res.json();
+    if (!Array.isArray(posts) || posts.length === 0) return null;
+    return posts.map((p: any) => ({
+      postId: BigInt(p.postId),
+      author: p.author as `0x${string}`,
+      blockNumber: BigInt(p.blockNumber),
+      txHash: p.txHash as `0x${string}`,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+async function discoverViaChainScan(
+  publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
+): Promise<PostDiscovery[]> {
+  const latestBlock = await publicClient.getBlockNumber();
+  let toBlock = latestBlock;
+  const collected: Awaited<ReturnType<typeof publicClient.getContractEvents>> = [];
+
+  for (let i = 0; i < MAX_CHUNKS && toBlock > 0n; i++) {
+    const fromBlock = toBlock > CHUNK_SIZE ? toBlock - CHUNK_SIZE : 0n;
+    const chunkLogs = await publicClient.getContractEvents({
+      address: ritualSocialContract.address,
+      abi: ritualSocialContract.abi,
+      eventName: 'PostCreated',
+      fromBlock,
+      toBlock,
+    });
+    collected.push(...chunkLogs);
+    if (collected.length >= TARGET_POST_COUNT || fromBlock === 0n) break;
+    toBlock = fromBlock - 1n;
+  }
+
+  return collected.map((log) => ({
+    postId: (log as any).args.postId as bigint,
+    author: (log as any).args.author as `0x${string}`,
+    blockNumber: log.blockNumber!,
+    txHash: log.transactionHash!,
+  }));
+}
+
 async function loadFeed(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer?: `0x${string}`,
 ): Promise<PostRecord[]> {
-  const latestBlock = await publicClient.getBlockNumber();
-  const lookback = 50_000n;
-  const fromBlock = latestBlock > lookback ? latestBlock - lookback : 0n;
+  const discovered = (await discoverViaIndexer()) ?? (await discoverViaChainScan(publicClient));
 
-  const logs = await publicClient.getContractEvents({
-    address: ritualSocialContract.address,
-    abi: ritualSocialContract.abi,
-    eventName: 'PostCreated',
-    fromBlock,
-    toBlock: latestBlock,
-  });
+  const sorted = [...discovered].sort((a, b) => Number(b.blockNumber - a.blockNumber)).slice(0, TARGET_POST_COUNT);
 
-  const sorted = [...logs].sort((a, b) => Number(b.blockNumber! - a.blockNumber!)).slice(0, 60);
+  const profileCache = new Map<string, ReturnType<typeof fetchProfile>>();
+  function fetchProfileCached(author: `0x${string}`) {
+    const key = author.toLowerCase();
+    if (!profileCache.has(key)) {
+      profileCache.set(key, fetchProfile(publicClient, author));
+    }
+    return profileCache.get(key)!;
+  }
 
   const posts = await Promise.all(
-    sorted.map(async (log) => {
-      const postId = (log as any).args.postId as bigint;
-      const author = (log as any).args.author as `0x${string}`;
+    sorted.map(async (discovery) => {
+      const { postId, author } = discovery;
 
       const [rawStruct, profile, likedByMe, repostedByMe] = await Promise.all([
         publicClient.readContract({
@@ -37,7 +92,7 @@ async function loadFeed(
           functionName: 'posts',
           args: [postId],
         }) as Promise<unknown>,
-        fetchProfile(publicClient, author),
+        fetchProfileCached(author),
         viewer
           ? (publicClient.readContract({
               address: ritualSocialContract.address,
@@ -82,8 +137,8 @@ async function loadFeed(
         isRepost,
         originalPostId: isRepost ? String(originalPostId) : undefined,
         onChain: {
-          txHash: log.transactionHash!,
-          blockNumber: Number(log.blockNumber),
+          txHash: discovery.txHash,
+          blockNumber: Number(discovery.blockNumber),
           timestamp: chainTimestampToMs(timestamp),
           from: author,
           to: ritualSocialContract.address,
@@ -108,7 +163,7 @@ export function useFeed() {
     queryFn: () => loadFeed(publicClient!, address),
     enabled: !!publicClient,
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
@@ -188,4 +243,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-            }
+      }
