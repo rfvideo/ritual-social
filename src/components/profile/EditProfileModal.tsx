@@ -4,6 +4,7 @@ import { Camera, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { resolveIpfsUri } from '@/lib/ipfs';
 import { uploadProfileMetadata } from '@/lib/profile';
+import { resizeImage } from '@/lib/image';
 import { useUpdateProfile } from '@/hooks/useProfile';
 import type { UserProfile } from '@/types';
 
@@ -97,7 +98,10 @@ export function EditProfileModal({
                 type="file"
                 accept="image/*"
                 hidden
-                onChange={(e) => e.target.files?.[0] && setBannerFile(e.target.files[0])}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setBannerFile(await resizeImage(file, 1600));
+                }}
               />
 
               <div className="absolute -bottom-8 left-5 h-20 w-20 overflow-hidden rounded-full border-4 border-ash bg-ash-200">
@@ -113,7 +117,10 @@ export function EditProfileModal({
                   type="file"
                   accept="image/*"
                   hidden
-                  onChange={(e) => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setAvatarFile(await resizeImage(file, 512));
+                  }}
                 />
               </div>
             </div>
@@ -172,4 +179,4 @@ function Field({
       </div>
     </div>
   );
-}
+            }
