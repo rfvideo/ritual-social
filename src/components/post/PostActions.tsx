@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, Repeat2, Share, Eye } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useLikePost, useRepost } from '@/hooks/useRitualSocial';
@@ -70,11 +70,6 @@ export function PostActions({ post }: { post: PostRecord }) {
           <span className="text-xs">{formatCount(post.likeCount)}</span>
         </button>
 
-        <div className="flex items-center gap-1.5 px-2 py-1 text-mist-dim/70">
-          <Eye size={16} />
-          <span className="text-xs">{formatCount(post.viewCount)}</span>
-        </div>
-
         <button onClick={handleShare} className="rounded-full px-2 py-1 transition hover:text-ritual-300">
           <Share size={16} />
         </button>
@@ -96,4 +91,4 @@ export function PostActions({ post }: { post: PostRecord }) {
       />
     </>
   );
-}
+        }
