@@ -21,7 +21,17 @@ export function Sidebar({ onPublish }: { onPublish: () => void }) {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ritual-gradient shadow-glow-sm">
             <Sparkles size={18} className="text-void" />
           </div>
-          <span className="font-display text-lg tracking-tight text-white">Ritual Social</span>
+          <div className="flex flex-col leading-tight">
+            <span className="font-display text-lg tracking-tight text-white">Ritual Social</span>
+            <a
+              href="https://x.com/raupee_"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-mist-dim hover:text-ritual-400"
+            >
+              by Raupee
+            </a>
+          </div>
         </div>
 
         <nav className="space-y-1">
