@@ -4,7 +4,6 @@ import { Repeat2 } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
 import { WalletBadge } from '@/components/wallet/WalletBadge';
 import { ExplorerLink } from '@/components/common/ExplorerLink';
-import { TranslateButton } from '@/components/ai/TranslateButton';
 import { AIExplainTerms } from '@/components/ai/AIExplainTerms';
 import { PostActions } from './PostActions';
 import { resolveIpfsUri } from '@/lib/ipfs';
@@ -88,9 +87,6 @@ export function PostCard({ post }: { post: PostRecord }) {
           </Link>
 
           <AIExplainTerms text={post.caption} />
-          <div className="mt-1.5">
-            <TranslateButton text={post.caption} />
-          </div>
 
           <ImageGrid images={post.images} />
 
