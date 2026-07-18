@@ -41,7 +41,6 @@ function useRitualAction(functionName: string) {
           functionName,
           args,
           value: parseEther(ACTION_FEE_ETH),
-          type: 'legacy',
           gas: GAS_LIMITS[functionName],
         });
 
@@ -111,7 +110,6 @@ export function useFollowGraph() {
           abi: ritualSocialContract.abi,
           functionName,
           args: [account],
-          type: 'legacy',
           gas: GAS_LIMITS[functionName],
         });
         toast.loading('Sending follow transaction…', { id: hash });
@@ -154,7 +152,6 @@ export function useTipCreator() {
           functionName: 'tip',
           args: [creator],
           value: parseEther(amountEth),
-          type: 'legacy',
           gas: GAS_LIMITS.tip,
         });
         toast.loading('Sending tip…', { id: hash });
@@ -176,4 +173,4 @@ export function useTipCreator() {
   );
 
   return { tip, pending };
-          }
+}
