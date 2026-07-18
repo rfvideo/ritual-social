@@ -4,6 +4,7 @@ import { usePublicClient } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { fetchProfile } from './useProfile';
 import { fetchCommentMetadata } from '@/lib/ipfs';
+import { chainTimestampToMs } from '@/lib/utils';
 import { useCommentOnPost } from './useRitualSocial';
 import type { CommentRecord } from '@/types';
 
@@ -29,7 +30,6 @@ export function useComments(postId: string) {
             args: [commentId],
           })) as unknown as [string, bigint, string, bigint];
 
-          // (author, postId, contentURI, timestamp) — positional, see note in useProfile.ts
           const [author, , contentURI, timestamp] = rawStruct;
 
           const [profile, meta] = await Promise.all([
@@ -42,11 +42,11 @@ export function useComments(postId: string) {
             postId,
             author: profile,
             body: meta.caption,
-            createdAt: Number(timestamp) * 1000,
+            createdAt: chainTimestampToMs(timestamp),
             onChain: {
-              txHash: '0x0' as `0x${string}`, // per-event tx hash requires log lookup; struct alone doesn't carry it
+              txHash: '0x0' as `0x${string}`,
               blockNumber: 0,
-              timestamp: Number(timestamp) * 1000,
+              timestamp: chainTimestampToMs(timestamp),
               from: author as `0x${string}`,
               to: ritualSocialContract.address,
               status: 'success',
