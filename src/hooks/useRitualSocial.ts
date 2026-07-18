@@ -35,7 +35,6 @@ function useRitualAction(functionName: string) {
       setError(null);
       try {
         setStage('awaiting-wallet');
-        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
@@ -44,7 +43,6 @@ function useRitualAction(functionName: string) {
           value: parseEther(ACTION_FEE_ETH),
           type: 'legacy',
           gas: GAS_LIMITS[functionName],
-          gasPrice,
         });
 
         setStage('pending');
@@ -108,7 +106,6 @@ export function useFollowGraph() {
     async (functionName: 'follow' | 'unfollow', account: `0x${string}`) => {
       setPending(true);
       try {
-        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualSocialContract.address,
           abi: ritualSocialContract.abi,
@@ -116,7 +113,6 @@ export function useFollowGraph() {
           args: [account],
           type: 'legacy',
           gas: GAS_LIMITS[functionName],
-          gasPrice,
         });
         toast.loading('Sending follow transaction…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -152,7 +148,6 @@ export function useTipCreator() {
     async (creator: `0x${string}`, amountEth: string) => {
       setPending(true);
       try {
-        const gasPrice = await publicClient!.getGasPrice();
         const hash = await writeContractAsync({
           address: ritualTreasuryContract.address,
           abi: ritualTreasuryContract.abi,
@@ -161,7 +156,6 @@ export function useTipCreator() {
           value: parseEther(amountEth),
           type: 'legacy',
           gas: GAS_LIMITS.tip,
-          gasPrice,
         });
         toast.loading('Sending tip…', { id: hash });
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
@@ -182,4 +176,4 @@ export function useTipCreator() {
   );
 
   return { tip, pending };
-            }
+          }
