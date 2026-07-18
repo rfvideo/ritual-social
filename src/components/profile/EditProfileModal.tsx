@@ -89,9 +89,11 @@ export function EditProfileModal({
               {bannerPreview && <img src={bannerPreview} alt="" className="h-full w-full object-cover" />}
               <button
                 onClick={() => bannerInput.current?.click()}
-                className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition hover:opacity-100"
+                className="absolute inset-0 flex items-center justify-center bg-black/30 text-white transition hover:bg-black/50 active:bg-black/50"
               >
-                <Camera size={20} />
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60">
+                  <Camera size={18} />
+                </span>
               </button>
               <input
                 ref={bannerInput}
@@ -108,9 +110,11 @@ export function EditProfileModal({
                 {avatarPreview && <img src={avatarPreview} alt="" className="h-full w-full object-cover" />}
                 <button
                   onClick={() => avatarInput.current?.click()}
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition hover:opacity-100"
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 text-white transition hover:bg-black/50 active:bg-black/50"
                 >
-                  <Camera size={16} />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60">
+                    <Camera size={14} />
+                  </span>
                 </button>
                 <input
                   ref={avatarInput}
@@ -179,4 +183,4 @@ function Field({
       </div>
     </div>
   );
-            }
+        }
