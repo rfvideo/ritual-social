@@ -14,7 +14,7 @@ interface PostDiscovery {
   txHash: `0x${string}`;
 }
 
-const TARGET_POST_COUNT = 60;
+const TARGET_POST_COUNT = 30;
 const CHUNK_SIZE = 50_000n;
 const MAX_CHUNKS = 40;
 
