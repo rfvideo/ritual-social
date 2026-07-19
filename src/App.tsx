@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
@@ -6,14 +6,15 @@ import { MobileHeader } from '@/components/layout/MobileHeader';
 import { RightPanel } from '@/components/layout/RightPanel';
 import { PostComposer } from '@/components/post/PostComposer';
 import { HomePage } from '@/pages/Home';
-import { ExplorePage } from '@/pages/Explore';
-import { SearchPage } from '@/pages/Search';
-import { NotificationsPage } from '@/pages/Notifications';
-import { ProfilePage } from '@/pages/Profile';
-import { PostDetailPage } from '@/pages/PostDetail';
 import { isChainConfigured } from '@/config/chain';
 import { CONTRACTS_DEPLOYED } from '@/config/constants';
 import { AlertTriangle } from 'lucide-react';
+
+const ExplorePage = lazy(() => import('@/pages/Explore').then((m) => ({ default: m.ExplorePage })));
+const SearchPage = lazy(() => import('@/pages/Search').then((m) => ({ default: m.SearchPage })));
+const NotificationsPage = lazy(() => import('@/pages/Notifications').then((m) => ({ default: m.NotificationsPage })));
+const ProfilePage = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.ProfilePage })));
+const PostDetailPage = lazy(() => import('@/pages/PostDetail').then((m) => ({ default: m.PostDetailPage })));
 
 function ConfigWarningBanner() {
   if (isChainConfigured && CONTRACTS_DEPLOYED) return null;
@@ -39,14 +40,16 @@ export default function App() {
         <Sidebar onPublish={() => setComposerOpen(true)} />
 
         <main className="min-h-screen w-full max-w-2xl border-x border-ash-200 pb-20 lg:pb-0">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/profile/:address" element={<ProfilePage />} />
-            <Route path="/post/:postId" element={<PostDetailPage />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/profile/:address" element={<ProfilePage />} />
+              <Route path="/post/:postId" element={<PostDetailPage />} />
+            </Routes>
+          </Suspense>
         </main>
 
         <div className="px-4">
