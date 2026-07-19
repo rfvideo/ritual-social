@@ -68,7 +68,15 @@ async function loadFeed(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer?: `0x${string}`,
 ): Promise<PostRecord[]> {
-  const discovered = (await discoverViaIndexer()) ?? (await discoverViaChainScan(publicClient));
+  const [indexed, scanned] = await Promise.all([
+    discoverViaIndexer(),
+    discoverViaChainScan(publicClient),
+  ]);
+  const merged = new Map<string, PostDiscovery>();
+  for (const d of [...(indexed ?? []), ...scanned]) {
+    merged.set(d.postId.toString(), d);
+  }
+  const discovered = Array.from(merged.values());
 
   const sorted = [...discovered].sort((a, b) => Number(b.blockNumber - a.blockNumber)).slice(0, TARGET_POST_COUNT);
 
@@ -243,4 +251,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-      }
+    }
