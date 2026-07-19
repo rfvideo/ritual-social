@@ -64,6 +64,7 @@ async function loadFeed(
   }
 
   const profileCache = new Map<string, ReturnType<typeof fetchProfile>>();
+
   function fetchProfileCached(author: `0x${string}`) {
     const key = author.toLowerCase();
     if (!profileCache.has(key)) {
@@ -145,8 +146,19 @@ async function loadFeed(
 
   const loaded = posts.filter((p): p is PostRecord => p !== null);
 
+  // SORTING: Paling banyak engagement di atas
   const engagement = (p: PostRecord) => p.likeCount + p.commentCount + p.repostCount;
-  return loaded.sort((a, b) => engagement(b) - engagement(a) || b.createdAt - a.createdAt);
+
+  return loaded.sort((a, b) => {
+    const engA = engagement(a);
+    const engB = engagement(b);
+
+    // Urutkan berdasarkan engagement tertinggi
+    if (engB !== engA) return engB - engA;
+
+    // Jika engagement sama, postingan lebih baru di atas
+    return b.createdAt - a.createdAt;
+  });
 }
 
 export function useFeed() {
@@ -238,4 +250,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-    }
+                     }
