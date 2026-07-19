@@ -15,8 +15,6 @@ interface PostDiscovery {
 }
 
 const TARGET_POST_COUNT = 30;
-const CHUNK_SIZE = 50_000n;
-const MAX_CHUNKS = 40;
 
 async function discoverViaIndexer(): Promise<PostDiscovery[] | null> {
   try {
@@ -33,35 +31,6 @@ async function discoverViaIndexer(): Promise<PostDiscovery[] | null> {
   } catch {
     return null;
   }
-}
-
-async function discoverViaChainScan(
-  publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
-): Promise<PostDiscovery[]> {
-  const latestBlock = await publicClient.getBlockNumber();
-  let toBlock = latestBlock;
-  const collected: Awaited<ReturnType<typeof publicClient.getContractEvents>> = [];
-
-  for (let i = 0; i < MAX_CHUNKS && toBlock > 0n; i++) {
-    const fromBlock = toBlock > CHUNK_SIZE ? toBlock - CHUNK_SIZE : 0n;
-    const chunkLogs = await publicClient.getContractEvents({
-      address: ritualSocialContract.address,
-      abi: ritualSocialContract.abi,
-      eventName: 'PostCreated',
-      fromBlock,
-      toBlock,
-    });
-    collected.push(...chunkLogs);
-    if (collected.length >= TARGET_POST_COUNT || fromBlock === 0n) break;
-    toBlock = fromBlock - 1n;
-  }
-
-  return collected.map((log) => ({
-    postId: (log as any).args.postId as bigint,
-    author: (log as any).args.author as `0x${string}`,
-    blockNumber: log.blockNumber!,
-    txHash: log.transactionHash!,
-  }));
 }
 
 async function discoverViaIdEnumeration(
@@ -84,14 +53,13 @@ async function loadFeed(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer?: `0x${string}`,
 ): Promise<PostRecord[]> {
-  const [ids, indexed, scanned] = await Promise.all([
+  const [ids, indexed] = await Promise.all([
     discoverViaIdEnumeration(publicClient),
     discoverViaIndexer().catch(() => null),
-    discoverViaChainScan(publicClient).catch(() => [] as PostDiscovery[]),
   ]);
 
   const txByPostId = new Map<string, `0x${string}`>();
-  for (const d of [...(indexed ?? []), ...scanned]) {
+  for (const d of indexed ?? []) {
     txByPostId.set(d.postId.toString(), d.txHash);
   }
 
@@ -267,4 +235,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-}
+    }
