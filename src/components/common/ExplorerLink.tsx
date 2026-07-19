@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { explorerTxUrl } from '@/config/chain';
 
 export function ExplorerLink({ txHash, className }: { txHash: string; className?: string }) {
+  if (!txHash || txHash === '0x0') return null;
   const url = explorerTxUrl(txHash);
   if (!url) {
     return (
