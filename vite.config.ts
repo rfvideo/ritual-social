@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,5 +17,16 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-wallet': ['wagmi', 'viem', '@rainbow-me/rainbowkit'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
   },
 });
