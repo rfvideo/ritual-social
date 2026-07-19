@@ -143,7 +143,10 @@ async function loadFeed(
     }),
   );
 
-  return posts.filter((p): p is PostRecord => p !== null);
+  const loaded = posts.filter((p): p is PostRecord => p !== null);
+
+  const engagement = (p: PostRecord) => p.likeCount + p.commentCount + p.repostCount;
+  return loaded.sort((a, b) => engagement(b) - engagement(a) || b.createdAt - a.createdAt);
 }
 
 export function useFeed() {
