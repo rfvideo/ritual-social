@@ -64,21 +64,36 @@ async function discoverViaChainScan(
   }));
 }
 
+async function discoverViaIdEnumeration(
+  publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
+): Promise<bigint[]> {
+  const nextPostId = (await publicClient.readContract({
+    address: ritualSocialContract.address,
+    abi: ritualSocialContract.abi,
+    functionName: 'nextPostId',
+  })) as bigint;
+
+  const ids: bigint[] = [];
+  for (let id = nextPostId - 1n; id >= 1n && ids.length < TARGET_POST_COUNT; id--) {
+    ids.push(id);
+  }
+  return ids;
+}
+
 async function loadFeed(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer?: `0x${string}`,
 ): Promise<PostRecord[]> {
-  const [indexed, scanned] = await Promise.all([
-    discoverViaIndexer(),
-    discoverViaChainScan(publicClient),
+  const [ids, indexed, scanned] = await Promise.all([
+    discoverViaIdEnumeration(publicClient),
+    discoverViaIndexer().catch(() => null),
+    discoverViaChainScan(publicClient).catch(() => [] as PostDiscovery[]),
   ]);
-  const merged = new Map<string, PostDiscovery>();
-  for (const d of [...(indexed ?? []), ...scanned]) {
-    merged.set(d.postId.toString(), d);
-  }
-  const discovered = Array.from(merged.values());
 
-  const sorted = [...discovered].sort((a, b) => Number(b.blockNumber - a.blockNumber)).slice(0, TARGET_POST_COUNT);
+  const txByPostId = new Map<string, `0x${string}`>();
+  for (const d of [...(indexed ?? []), ...scanned]) {
+    txByPostId.set(d.postId.toString(), d.txHash);
+  }
 
   const profileCache = new Map<string, ReturnType<typeof fetchProfile>>();
   function fetchProfileCached(author: `0x${string}`) {
@@ -90,17 +105,21 @@ async function loadFeed(
   }
 
   const posts = await Promise.all(
-    sorted.map(async (discovery) => {
-      const { postId, author } = discovery;
+    ids.map(async (postId) => {
+      const rawStruct = (await publicClient.readContract({
+        address: ritualSocialContract.address,
+        abi: ritualSocialContract.abi,
+        functionName: 'posts',
+        args: [postId],
+      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
 
-      const [rawStruct, profile, likedByMe, repostedByMe] = await Promise.all([
-        publicClient.readContract({
-          address: ritualSocialContract.address,
-          abi: ritualSocialContract.abi,
-          functionName: 'posts',
-          args: [postId],
-        }) as Promise<unknown>,
-        fetchProfileCached(author),
+      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists] =
+        rawStruct;
+
+      if (!exists) return null;
+
+      const [profile, likedByMe, repostedByMe] = await Promise.all([
+        fetchProfileCached(author as `0x${string}`),
         viewer
           ? (publicClient.readContract({
               address: ritualSocialContract.address,
@@ -118,9 +137,6 @@ async function loadFeed(
             }) as Promise<boolean>)
           : Promise.resolve(false),
       ]);
-
-      const [, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId] =
-        rawStruct as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
 
       let caption = '';
       let images: string[] = [];
@@ -145,10 +161,10 @@ async function loadFeed(
         isRepost,
         originalPostId: isRepost ? String(originalPostId) : undefined,
         onChain: {
-          txHash: discovery.txHash,
-          blockNumber: Number(discovery.blockNumber),
+          txHash: txByPostId.get(postId.toString()) ?? ('0x0' as `0x${string}`),
+          blockNumber: 0,
           timestamp: chainTimestampToMs(timestamp),
-          from: author,
+          from: author as `0x${string}`,
           to: ritualSocialContract.address,
           status: 'success',
         },
@@ -159,7 +175,7 @@ async function loadFeed(
     }),
   );
 
-  return posts;
+  return posts.filter((p): p is PostRecord => p !== null);
 }
 
 export function useFeed() {
@@ -251,4 +267,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-    }
+}
