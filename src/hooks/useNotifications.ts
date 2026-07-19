@@ -19,14 +19,12 @@ async function loadNotifications(
       address: ritualSocialContract.address,
       abi: ritualSocialContract.abi,
       eventName: 'PostLiked',
-      args: { author: viewer },
       ...range,
     }),
     publicClient.getContractEvents({
       address: ritualSocialContract.address,
       abi: ritualSocialContract.abi,
       eventName: 'Followed',
-      args: { followee: viewer },
       ...range,
     }),
     publicClient.getContractEvents({
@@ -45,77 +43,123 @@ async function loadNotifications(
 
   const notifications: NotificationRecord[] = [];
 
+  // Likes
   for (const log of likedLogs) {
     const args = (log as any).args;
+
+    if (!args) continue;
+    if (args.author.toLowerCase() !== viewer.toLowerCase()) continue;
     if (args.liker.toLowerCase() === viewer.toLowerCase()) continue;
+
     const actor = await fetchProfile(publicClient, args.liker);
+
+    const block = await publicClient.getBlock({
+      blockNumber: log.blockNumber!,
+    });
+
     notifications.push({
       id: `like-${log.transactionHash}-${log.logIndex}`,
       kind: 'like',
       actor,
       postId: args.postId.toString(),
-      createdAt: chainTimestampToMs((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp),
+      createdAt: chainTimestampToMs(block.timestamp),
       read: false,
     });
   }
 
+  // Follow
   for (const log of followedLogs) {
     const args = (log as any).args;
+
+    if (!args) continue;
+    if (args.followee.toLowerCase() !== viewer.toLowerCase()) continue;
+
     const actor = await fetchProfile(publicClient, args.follower);
+
+    const block = await publicClient.getBlock({
+      blockNumber: log.blockNumber!,
+    });
+
     notifications.push({
       id: `follow-${log.transactionHash}-${log.logIndex}`,
       kind: 'follow',
       actor,
-      createdAt: chainTimestampToMs((await publicClient.getBlock({ blockNumber: log.blockNumber! })).timestamp),
+      createdAt: chainTimestampToMs(block.timestamp),
       read: false,
     });
   }
 
+  // Comment
   for (const log of commentLogs) {
     const args = (log as any).args;
+
+    if (!args) continue;
     if (args.author.toLowerCase() === viewer.toLowerCase()) continue;
+
     const post = (await publicClient.readContract({
       address: ritualSocialContract.address,
       abi: ritualSocialContract.abi,
       functionName: 'posts',
       args: [args.postId],
     })) as unknown as [string, ...unknown[]];
+
     const postAuthor = post[0];
+
     if (postAuthor.toLowerCase() !== viewer.toLowerCase()) continue;
+
     const actor = await fetchProfile(publicClient, args.author);
+
+    const block = await publicClient.getBlock({
+      blockNumber: log.blockNumber!,
+    });
+
     notifications.push({
       id: `comment-${log.transactionHash}-${log.logIndex}`,
       kind: 'comment',
       actor,
       postId: args.postId.toString(),
-      createdAt: chainTimestampToMs(args.timestamp),
+      createdAt: chainTimestampToMs(block.timestamp),
       read: false,
     });
   }
 
+  // Repost
   for (const log of repostLogs) {
     const args = (log as any).args;
+
+    if (!args) continue;
     if (args.reposter.toLowerCase() === viewer.toLowerCase()) continue;
+
     const post = (await publicClient.readContract({
       address: ritualSocialContract.address,
       abi: ritualSocialContract.abi,
       functionName: 'posts',
       args: [args.postId],
     })) as unknown as [string, ...unknown[]];
+
     const postAuthor = post[0];
+
     if (postAuthor.toLowerCase() !== viewer.toLowerCase()) continue;
+
     const actor = await fetchProfile(publicClient, args.reposter);
+
+    const block = await publicClient.getBlock({
+      blockNumber: log.blockNumber!,
+    });
+
     notifications.push({
       id: `repost-${log.transactionHash}-${log.logIndex}`,
       kind: 'repost',
       actor,
       postId: args.postId.toString(),
-      createdAt: chainTimestampToMs(args.timestamp),
+      createdAt: chainTimestampToMs(block.timestamp),
       read: false,
     });
   }
 
-  return notifications.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+  return notifications
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 50);
 }
 
 export function useNotifications() {
@@ -127,6 +171,6 @@ export function useNotifications() {
     queryFn: () => loadNotifications(publicClient!, address!),
     enabled: !!publicClient && !!address,
     staleTime: 20_000,
-    refetchInterval: 45_000,
+    refetchInterval: 15_000,
   });
-                                                                  }
+}
