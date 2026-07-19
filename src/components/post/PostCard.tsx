@@ -60,7 +60,7 @@ export function PostCard({ post }: { post: PostRecord }) {
     >
       {post.isRepost && (
         <div className="mb-2 flex items-center gap-1.5 pl-11 text-xs text-mist-dim">
-          <Repeat2 size={13} /> Direpost
+          <Repeat2 size={13} /> Reposted
         </div>
       )}
 
