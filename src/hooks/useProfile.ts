@@ -17,10 +17,10 @@ async function fetchProfileMetadata(uri: string): Promise<ProfileMetadata> {
   try {
     let res: Response;
     try {
-      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(15000) });
+      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(8000) });
     } catch {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(15000) });
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      res = await fetch(resolveIpfsUri(uri), { signal: AbortSignal.timeout(8000) });
     }
     if (!res.ok) throw new Error('metadata fetch failed');
     const data = (await res.json()) as ProfileMetadata;
@@ -125,4 +125,4 @@ export function useUpdateProfile() {
   );
 
   return { updateProfile, pending };
-    }
+}
