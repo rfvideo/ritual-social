@@ -20,10 +20,10 @@ const metadataCache = new Map<string, PostMetadata>();
 
 async function fetchWithRetry(url: string): Promise<Response> {
   try {
-    return await fetch(url, { signal: AbortSignal.timeout(15000) });
+    return await fetch(url, { signal: AbortSignal.timeout(8000) });
   } catch (err) {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    return fetch(url, { signal: AbortSignal.timeout(15000) });
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return fetch(url, { signal: AbortSignal.timeout(8000) });
   }
 }
 
@@ -104,4 +104,4 @@ export async function uploadPostContent(params: {
   }
   const { contentURI } = await res.json();
   return contentURI;
-      }
+}
