@@ -3,14 +3,28 @@ import { getStore } from '@netlify/blobs';
 const STORE_NAME = 'ritual-social-index';
 const INDEX_KEY = 'posts';
 const CHECKPOINT_KEY = 'checkpoint';
+const ACTIVITY_KEY = 'activity';
 
 const MAX_ENTRIES = 1000;
+const MAX_ACTIVITY_ENTRIES = 500;
 
 export interface IndexedPost {
   postId: string;
   author: string;
   blockNumber: string;
   txHash: string;
+}
+
+export type ActivityKind = 'like' | 'follow' | 'comment' | 'repost';
+
+export interface ActivityEvent {
+  id: string;
+  kind: ActivityKind;
+  actor: string;
+  targetUser: string;
+  postId?: string;
+  timestamp: number;
+  blockNumber: string;
 }
 
 function getIndexStore() {
@@ -41,4 +55,15 @@ export async function readCheckpoint(): Promise<bigint | null> {
 export async function writeCheckpoint(block: bigint): Promise<void> {
   const store = getIndexStore();
   await store.set(CHECKPOINT_KEY, block.toString());
+}
+
+export async function readActivity(): Promise<ActivityEvent[]> {
+  const store = getIndexStore();
+  const data = await store.get(ACTIVITY_KEY, { type: 'json' }).catch(() => null);
+  return (data as ActivityEvent[] | null) ?? [];
+}
+
+export async function writeActivity(events: ActivityEvent[]): Promise<void> {
+  const store = getIndexStore();
+  await store.setJSON(ACTIVITY_KEY, events.slice(0, MAX_ACTIVITY_ENTRIES));
 }
