@@ -59,6 +59,7 @@ export interface NotificationRecord {
   kind: NotificationKind;
   actor: UserProfile;
   postId?: string;
+  commentText?: string;
   createdAt: number;
   read: boolean;
 }
