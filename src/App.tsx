@@ -39,7 +39,7 @@ export default function App() {
       <div className="mx-auto flex max-w-7xl justify-center">
         <Sidebar onPublish={() => setComposerOpen(true)} />
 
-        <main className="min-h-screen w-full max-w-2xl border-x border-ash-200 pb-20 lg:pb-0">
+        <main className="min-h-screen w-full max-w-3xl border-x border-ash-200 pb-20 lg:pb-0">
           <Suspense fallback={null}>
             <Routes>
               <Route path="/" element={<HomePage />} />
