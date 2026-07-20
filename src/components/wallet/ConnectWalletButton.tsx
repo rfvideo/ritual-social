@@ -30,13 +30,13 @@ export function ConnectWalletButton({ full = false }: { full?: boolean }) {
             ) : (
               <button
                 onClick={openAccountModal}
-                className="flex items-center gap-2 rounded-full border border-ash-300 bg-ash-100/60 py-1.5 pl-1.5 pr-3 transition hover:border-ritual-500 hover:shadow-glow-sm"
+                className="flex items-center gap-1.5 rounded-full border border-ash-300 bg-ash-100/60 py-1 pl-1 pr-2.5 transition hover:border-ritual-500 hover:shadow-glow-sm"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ritual-gradient text-void">
-                  <Wallet size={14} />
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ritual-gradient text-void">
+                  <Wallet size={12} />
                 </span>
-                <span className="font-mono text-sm text-mist-light">{truncateAddress(account.address)}</span>
-                <ChevronDown size={14} className="text-mist-dim" />
+                <span className="font-mono text-xs text-mist-light">{truncateAddress(account.address)}</span>
+                <ChevronDown size={12} className="text-mist-dim" />
               </button>
             )}
           </div>
