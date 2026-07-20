@@ -18,8 +18,8 @@ const CONTRACT_ADDRESS = (process.env.VITE_RITUAL_SOCIAL_ADDRESS ?? '') as `0x${
 const CHAIN_ID = Number(process.env.VITE_RITUAL_CHAIN_ID ?? 1979);
 const IPFS_GATEWAY = process.env.VITE_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud/ipfs/';
 
-const CHUNK = 500_000n;
-const INITIAL_BACKFILL = 2_000_000n;
+const CHUNK = 90_000n;
+const INITIAL_BACKFILL = 1_000_000n;
 
 const POST_CREATED_EVENT = parseAbiItem(
   'event PostCreated(uint256 indexed postId, address indexed author, string contentURI, uint64 timestamp)',
