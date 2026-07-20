@@ -30,7 +30,7 @@ async function loadViaDirectScan(
   viewer: `0x${string}`,
 ): Promise<RawActivity[]> {
   const latestBlock = await publicClient.getBlockNumber();
-  const lookback = 1_000_000n;
+  const lookback = 100_000n; // indexer covers older activity permanently; this only needs to catch "just now"
   const fromBlock = latestBlock > lookback ? latestBlock - lookback : 0n;
   const range = { fromBlock, toBlock: latestBlock };
 
@@ -126,7 +126,15 @@ async function loadNotifications(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
   viewer: `0x${string}`,
 ): Promise<NotificationRecord[]> {
-  const raw = (await loadViaIndexer(viewer)) ?? (await loadViaDirectScan(publicClient, viewer));
+  const [indexed, recent] = await Promise.all([
+    loadViaIndexer(viewer),
+    loadViaDirectScan(publicClient, viewer).catch(() => [] as RawActivity[]),
+  ]);
+  const merged = new Map<string, RawActivity>();
+  for (const a of [...(indexed ?? []), ...recent]) {
+    merged.set(a.id, a);
+  }
+  const raw = Array.from(merged.values());
 
   const profileCache = new Map<string, ReturnType<typeof fetchProfile>>();
   function actorProfile(address: string) {
@@ -159,9 +167,9 @@ export function useNotifications() {
     queryKey: ['notifications', address],
     queryFn: () => loadNotifications(publicClient!, address!),
     enabled: !!publicClient && !!address,
-    staleTime: 20_000,
-    refetchInterval: 90_000,
+    staleTime: 8_000,
+    refetchInterval: 12_000,
     retry: 2,
     retryDelay: (attempt) => 1000 * (attempt + 1),
   });
-      }
+                  }
