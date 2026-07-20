@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { Calendar, Link2, MapPin, Pencil } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
-import { WalletBadge } from '@/components/wallet/WalletBadge';
-import { FollowListModal } from './FollowListModal';
 import { resolveIpfsUri } from '@/lib/ipfs';
 import { formatCount, formatJoinDate } from '@/lib/utils';
 import { useFollowGraph, useTipCreator } from '@/hooks/useRitualSocial';
@@ -26,7 +24,6 @@ export function ProfileHeader({
   const { tip, pending: tipPending } = useTipCreator();
   const [tipOpen, setTipOpen] = useState(false);
   const [tipAmount, setTipAmount] = useState('0.01');
-  const [listOpen, setListOpen] = useState<'following' | 'followers' | null>(null);
 
   async function handleFollowToggle() {
     const ok = following ? await unfollow(profile.address) : await follow(profile.address);
@@ -90,7 +87,6 @@ export function ProfileHeader({
         <div className="mt-3">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-xl text-white">{profile.displayName}</h1>
-            <WalletBadge address={profile.address} />
           </div>
           <p className="text-sm text-mist-dim">@{profile.username}</p>
         </div>
@@ -119,27 +115,20 @@ export function ProfileHeader({
         </div>
 
         <div className="mt-3 flex gap-4 text-sm">
-          <button onClick={() => setListOpen('following')} className="hover:underline">
+          <span>
             <strong className="text-mist-light">{formatCount(profile.followingCount)}</strong>{' '}
             <span className="text-mist-dim">Following</span>
-          </button>
-          <button onClick={() => setListOpen('followers')} className="hover:underline">
+          </span>
+          <span>
             <strong className="text-mist-light">{formatCount(profile.followerCount)}</strong>{' '}
             <span className="text-mist-dim">Followers</span>
-          </button>
+          </span>
           <span>
             <strong className="text-mist-light">{formatCount(profile.postCount)}</strong>{' '}
             <span className="text-mist-dim">Posts</span>
           </span>
         </div>
       </div>
-
-      <FollowListModal
-        address={profile.address}
-        type={listOpen ?? 'following'}
-        open={listOpen !== null}
-        onClose={() => setListOpen(null)}
-      />
     </div>
   );
-          }
+      }
