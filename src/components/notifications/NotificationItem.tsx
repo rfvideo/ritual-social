@@ -44,6 +44,9 @@ export function NotificationItem({ notification }: { notification: NotificationR
           <span className="font-semibold">{notification.actor.displayName}</span>{' '}
           <span className="text-mist">{VERB[notification.kind]}</span>
         </p>
+        {notification.kind === 'comment' && notification.commentText && (
+          <p className="mt-0.5 truncate text-sm text-mist-dim">&ldquo;{notification.commentText}&rdquo;</p>
+        )}
         <p className="text-xs text-mist-dim">{formatRelativeTime(notification.createdAt)}</p>
       </div>
     </div>
