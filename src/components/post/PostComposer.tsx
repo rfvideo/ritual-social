@@ -114,8 +114,8 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   const overLimit = caption.length > MAX_CHARS;
-const nearLimit = caption.length > MAX_CHARS * 0.9 && !overLimit;
-const canPublish = (caption.trim().length > 0 || images.length > 0) && !overLimit;
+  const nearLimit = caption.length > MAX_CHARS * 0.9 && !overLimit;
+  const canPublish = (caption.trim().length > 0 || images.length > 0) && !overLimit;
 
   return (
     <AnimatePresence>
@@ -167,14 +167,16 @@ const canPublish = (caption.trim().length > 0 || images.length > 0) && !overLimi
                 </div>
 
                 <div className="mt-3 flex items-center justify-end border-t border-ash-200 pt-3">
-                  <span className={`text-xs font-mono ${overLimit ? 'text-red-400' : 'text-mist-dim'}`}>
+                  <span
+                    className={`text-xs font-mono ${overLimit ? 'text-red-400' : nearLimit ? 'text-yellow-400' : 'text-mist-dim'}`}
+                  >
                     {caption.length}/{MAX_CHARS}
                   </span>
                 </div>
 
                 <button
                   onClick={proceedToPublish}
-                  disabled={overLimit || uploading || moderationLoading}
+                  disabled={!canPublish || uploading || moderationLoading}
                   className="ritual-btn mt-4 w-full"
                 >
                   {uploading || moderationLoading ? <Loader2 size={16} className="animate-spin" /> : 'Publish to Ritual Chain'}
@@ -208,4 +210,4 @@ const canPublish = (caption.trim().length > 0 || images.length > 0) && !overLimi
       />
     </AnimatePresence>
   );
-  }
+}
