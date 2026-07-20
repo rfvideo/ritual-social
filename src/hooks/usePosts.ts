@@ -64,7 +64,6 @@ async function loadFeed(
   }
 
   const profileCache = new Map<string, ReturnType<typeof fetchProfile>>();
-
   function fetchProfileCached(author: `0x${string}`) {
     const key = author.toLowerCase();
     if (!profileCache.has(key)) {
@@ -73,8 +72,8 @@ async function loadFeed(
     return profileCache.get(key)!;
   }
 
-  const posts = await Promise.all(
-    ids.map(async (postId) => {
+  async function loadOne(postId: bigint): Promise<PostRecord | null> {
+    try {
       const rawStruct = (await publicClient.readContract({
         address: ritualSocialContract.address,
         abi: ritualSocialContract.abi,
@@ -90,20 +89,24 @@ async function loadFeed(
       const [profile, likedByMe, repostedByMe] = await Promise.all([
         fetchProfileCached(author as `0x${string}`),
         viewer
-          ? (publicClient.readContract({
-              address: ritualSocialContract.address,
-              abi: ritualSocialContract.abi,
-              functionName: 'hasLiked',
-              args: [postId, viewer],
-            }) as Promise<boolean>)
+          ? (publicClient
+              .readContract({
+                address: ritualSocialContract.address,
+                abi: ritualSocialContract.abi,
+                functionName: 'hasLiked',
+                args: [postId, viewer],
+              })
+              .catch(() => false) as Promise<boolean>)
           : Promise.resolve(false),
         viewer
-          ? (publicClient.readContract({
-              address: ritualSocialContract.address,
-              abi: ritualSocialContract.abi,
-              functionName: 'hasReposted',
-              args: [postId, viewer],
-            }) as Promise<boolean>)
+          ? (publicClient
+              .readContract({
+                address: ritualSocialContract.address,
+                abi: ritualSocialContract.abi,
+                functionName: 'hasReposted',
+                args: [postId, viewer],
+              })
+              .catch(() => false) as Promise<boolean>)
           : Promise.resolve(false),
       ]);
 
@@ -117,7 +120,7 @@ async function loadFeed(
         caption = '(failed to load IPFS metadata)';
       }
 
-      const record: PostRecord = {
+      return {
         id: postId.toString(),
         author: profile,
         images,
@@ -140,25 +143,22 @@ async function loadFeed(
         likedByMe,
         repostedByMe,
       };
-      return record;
-    }),
-  );
+    } catch {
+      return null;
+    }
+  }
+
+  const BATCH_SIZE = 6;
+  const posts: (PostRecord | null)[] = [];
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = await Promise.all(ids.slice(i, i + BATCH_SIZE).map(loadOne));
+    posts.push(...batch);
+  }
 
   const loaded = posts.filter((p): p is PostRecord => p !== null);
 
-  // SORTING: Paling banyak engagement di atas
   const engagement = (p: PostRecord) => p.likeCount + p.commentCount + p.repostCount;
-
-  return loaded.sort((a, b) => {
-    const engA = engagement(a);
-    const engB = engagement(b);
-
-    // Urutkan berdasarkan engagement tertinggi
-    if (engB !== engA) return engB - engA;
-
-    // Jika engagement sama, postingan lebih baru di atas
-    return b.createdAt - a.createdAt;
-  });
+  return loaded.sort((a, b) => engagement(b) - engagement(a) || b.createdAt - a.createdAt);
 }
 
 export function useFeed() {
@@ -171,6 +171,8 @@ export function useFeed() {
     enabled: !!publicClient,
     staleTime: 15_000,
     refetchInterval: 60_000,
+    retry: 2,
+    retryDelay: (attempt) => 1000 * (attempt + 1),
   });
 }
 
@@ -250,4 +252,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-                     }
+                }
