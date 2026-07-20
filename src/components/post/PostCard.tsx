@@ -70,7 +70,7 @@ export function PostCard({ post }: { post: PostRecord }) {
         </Link>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <Link to={`/profile/${post.author.address}`} className="font-semibold text-mist-light hover:underline">
               {post.author.displayName}
             </Link>
