@@ -114,6 +114,8 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   const overLimit = caption.length > MAX_CHARS;
+const nearLimit = caption.length > MAX_CHARS * 0.9 && !overLimit;
+const canPublish = (caption.trim().length > 0 || images.length > 0) && !overLimit;
 
   return (
     <AnimatePresence>
