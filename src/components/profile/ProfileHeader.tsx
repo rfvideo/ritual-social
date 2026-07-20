@@ -61,8 +61,12 @@ export function ProfileHeader({
                 <button onClick={() => setTipOpen((v) => !v)} className="ritual-btn-ghost">
                   Tip
                 </button>
-                <button onClick={handleFollowToggle} disabled={pending} className={following ? 'ritual-btn-ghost' : 'ritual-btn'}>
-                  {following ? 'Following' : 'Follow'}
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={pending}
+                  className={following ? 'ritual-btn-ghost text-red-400' : 'ritual-btn'}
+                >
+                  {following ? 'Unfollow' : 'Follow'}
                 </button>
               </>
             )}
@@ -138,4 +142,4 @@ export function ProfileHeader({
       />
     </div>
   );
-                  }
+          }
