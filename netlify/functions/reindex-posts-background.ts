@@ -7,6 +7,8 @@ import {
   writeCheckpoint,
   readActivity,
   writeActivity,
+  readFollowGraph,
+  writeFollowGraph,
   type IndexedPost,
   type ActivityEvent,
 } from './_index-store';
@@ -14,6 +16,7 @@ import {
 const RPC_URL = process.env.VITE_RITUAL_RPC_URL ?? '';
 const CONTRACT_ADDRESS = (process.env.VITE_RITUAL_SOCIAL_ADDRESS ?? '') as `0x${string}`;
 const CHAIN_ID = Number(process.env.VITE_RITUAL_CHAIN_ID ?? 1979);
+const IPFS_GATEWAY = process.env.VITE_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud/ipfs/';
 
 const CHUNK = 500_000n;
 const INITIAL_BACKFILL = 2_000_000n;
@@ -31,6 +34,23 @@ const POST_REPOSTED_EVENT = parseAbiItem(
   'event PostReposted(uint256 indexed postId, uint256 indexed newPostId, address indexed reposter, uint64 timestamp)',
 );
 const FOLLOWED_EVENT = parseAbiItem('event Followed(address indexed follower, address indexed followee, uint64 timestamp)');
+const UNFOLLOWED_EVENT = parseAbiItem('event Unfollowed(address indexed follower, address indexed followee, uint64 timestamp)');
+
+function resolveIpfs(uri: string): string {
+  if (uri.startsWith('ipfs://')) return `${IPFS_GATEWAY.replace(/\/$/, '')}/${uri.replace('ipfs://', '')}`;
+  return uri;
+}
+
+async function fetchCommentText(contentURI: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(resolveIpfs(contentURI), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return undefined;
+    const data = (await res.json()) as { caption?: string };
+    return data.caption;
+  } catch {
+    return undefined;
+  }
+}
 
 export default async () => {
   if (!RPC_URL || !CONTRACT_ADDRESS) {
@@ -60,12 +80,13 @@ export default async () => {
   const toBlock = fromBlock + CHUNK < latestBlock ? fromBlock + CHUNK : latestBlock;
 
   try {
-    const [postLogs, likeLogs, commentLogs, repostLogs, followLogs] = await Promise.all([
+    const [postLogs, likeLogs, commentLogs, repostLogs, followLogs, unfollowLogs] = await Promise.all([
       client.getLogs({ address: CONTRACT_ADDRESS, event: POST_CREATED_EVENT, fromBlock, toBlock }),
       client.getLogs({ address: CONTRACT_ADDRESS, event: POST_LIKED_EVENT, fromBlock, toBlock }),
       client.getLogs({ address: CONTRACT_ADDRESS, event: COMMENT_ADDED_EVENT, fromBlock, toBlock }),
       client.getLogs({ address: CONTRACT_ADDRESS, event: POST_REPOSTED_EVENT, fromBlock, toBlock }),
       client.getLogs({ address: CONTRACT_ADDRESS, event: FOLLOWED_EVENT, fromBlock, toBlock }),
+      client.getLogs({ address: CONTRACT_ADDRESS, event: UNFOLLOWED_EVENT, fromBlock, toBlock }),
     ]);
 
     if (postLogs.length > 0) {
@@ -140,12 +161,14 @@ export default async () => {
     for (const log of commentLogs) {
       const postAuthor = await resolvePostAuthor(log.args.postId as bigint);
       if (!postAuthor) continue;
+      const commentText = await fetchCommentText(log.args.contentURI as string);
       newActivity.push({
         id: `comment-${log.transactionHash}-${log.logIndex}`,
         kind: 'comment',
         actor: log.args.author as string,
         targetUser: postAuthor,
         postId: (log.args.postId as bigint).toString(),
+        commentText,
         timestamp: Number(log.args.timestamp) * 1000,
         blockNumber: log.blockNumber!.toString(),
       });
@@ -175,6 +198,30 @@ export default async () => {
       });
       await writeActivity(merged);
       console.log(`[reindex] indexed ${newActivity.length} new activity event(s)`);
+    }
+
+    if (followLogs.length > 0 || unfollowLogs.length > 0) {
+      const graph = await readFollowGraph();
+      const changes = [
+        ...followLogs.map((log) => ({ type: 'follow' as const, log })),
+        ...unfollowLogs.map((log) => ({ type: 'unfollow' as const, log })),
+      ].sort((a, b) => {
+        const blockDiff = Number(a.log.blockNumber! - b.log.blockNumber!);
+        if (blockDiff !== 0) return blockDiff;
+        return Number(a.log.logIndex! - b.log.logIndex!);
+      });
+
+      for (const change of changes) {
+        const follower = (change.log.args.follower as string).toLowerCase();
+        const followee = (change.log.args.followee as string).toLowerCase();
+        const current = new Set(graph[follower] ?? []);
+        if (change.type === 'follow') current.add(followee);
+        else current.delete(followee);
+        graph[follower] = Array.from(current);
+      }
+
+      await writeFollowGraph(graph);
+      console.log(`[reindex] applied ${changes.length} follow graph change(s)`);
     }
 
     await writeCheckpoint(toBlock);
