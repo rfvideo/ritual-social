@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { parseEther } from 'viem';
-import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, usePublicClient, useAccount } from 'wagmi';
+import { useQueryClient } from '@tanstack/react-query';
 import { ritualSocialContract, ritualTreasuryContract } from '@/contracts';
 import { ACTION_FEE_ETH } from '@/config/constants';
 import toast from 'react-hot-toast';
@@ -22,7 +23,6 @@ const GAS_LIMITS: Record<string, bigint> = {
   unfollow: 200_000n,
   updateProfile: 250_000n,
   tip: 150_000n,
-
 };
 
 function useRitualAction(functionName: string) {
@@ -100,6 +100,8 @@ export function useRepost() {
 export function useFollowGraph() {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
+  const { address: viewer } = useAccount();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
 
   const run = useCallback(
@@ -117,6 +119,9 @@ export function useFollowGraph() {
         const receipt = await publicClient!.waitForTransactionReceipt({ hash });
         if (receipt.status === 'success') {
           toast.success(functionName === 'follow' ? 'Followed successfully' : 'Unfollowed successfully', { id: hash });
+          queryClient.invalidateQueries({ queryKey: ['isFollowing', viewer, account] });
+          queryClient.invalidateQueries({ queryKey: ['profile', account] });
+          queryClient.invalidateQueries({ queryKey: ['profile', viewer] });
           return true;
         }
         toast.error('Transaction reverted', { id: hash });
@@ -128,7 +133,7 @@ export function useFollowGraph() {
         setPending(false);
       }
     },
-    [writeContractAsync, publicClient],
+    [writeContractAsync, publicClient, viewer, queryClient],
   );
 
   return {
@@ -174,4 +179,4 @@ export function useTipCreator() {
   );
 
   return { tip, pending };
-}
+            }
