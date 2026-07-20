@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useAccount } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { fetchProfile } from './useProfile';
+import { fetchPostMetadata } from '@/lib/ipfs';
 import type { NotificationRecord } from '@/types';
 
 interface RawActivity {
@@ -10,6 +11,7 @@ interface RawActivity {
   actor: string;
   targetUser: string;
   postId?: string;
+  commentText?: string;
   timestamp: number;
   blockNumber: string;
 }
@@ -30,7 +32,7 @@ async function loadViaDirectScan(
   viewer: `0x${string}`,
 ): Promise<RawActivity[]> {
   const latestBlock = await publicClient.getBlockNumber();
-  const lookback = 100_000n; // indexer covers older activity permanently; this only needs to catch "just now"
+  const lookback = 100_000n;
   const fromBlock = latestBlock > lookback ? latestBlock - lookback : 0n;
   const range = { fromBlock, toBlock: latestBlock };
 
@@ -88,12 +90,16 @@ async function loadViaDirectScan(
       args: [args.postId],
     })) as unknown as [string, ...unknown[]];
     if (post[0].toLowerCase() !== viewer.toLowerCase()) continue;
+    const commentText = await fetchPostMetadata(args.contentURI)
+      .then((m) => m.caption)
+      .catch(() => undefined);
     activity.push({
       id: `comment-${log.transactionHash}-${log.logIndex}`,
       kind: 'comment',
       actor: args.author,
       targetUser: viewer,
       postId: args.postId.toString(),
+      commentText,
       timestamp: Number(args.timestamp) * 1000,
       blockNumber: log.blockNumber!.toString(),
     });
@@ -151,6 +157,7 @@ async function loadNotifications(
       kind: a.kind,
       actor: await actorProfile(a.actor),
       postId: a.postId,
+      commentText: a.commentText,
       createdAt: a.timestamp,
       read: false,
     })),
@@ -172,4 +179,4 @@ export function useNotifications() {
     retry: 2,
     retryDelay: (attempt) => 1000 * (attempt + 1),
   });
-                  }
+      }
