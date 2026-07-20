@@ -4,6 +4,7 @@ const STORE_NAME = 'ritual-social-index';
 const INDEX_KEY = 'posts';
 const CHECKPOINT_KEY = 'checkpoint';
 const ACTIVITY_KEY = 'activity';
+const FOLLOW_GRAPH_KEY = 'follow-graph';
 
 const MAX_ENTRIES = 1000;
 const MAX_ACTIVITY_ENTRIES = 500;
@@ -23,9 +24,12 @@ export interface ActivityEvent {
   actor: string;
   targetUser: string;
   postId?: string;
+  commentText?: string;
   timestamp: number;
   blockNumber: string;
 }
+
+export type FollowGraph = Record<string, string[]>;
 
 function getIndexStore() {
   return getStore({
@@ -66,4 +70,15 @@ export async function readActivity(): Promise<ActivityEvent[]> {
 export async function writeActivity(events: ActivityEvent[]): Promise<void> {
   const store = getIndexStore();
   await store.setJSON(ACTIVITY_KEY, events.slice(0, MAX_ACTIVITY_ENTRIES));
+}
+
+export async function readFollowGraph(): Promise<FollowGraph> {
+  const store = getIndexStore();
+  const data = await store.get(FOLLOW_GRAPH_KEY, { type: 'json' }).catch(() => null);
+  return (data as FollowGraph | null) ?? {};
+}
+
+export async function writeFollowGraph(graph: FollowGraph): Promise<void> {
+  const store = getIndexStore();
+  await store.setJSON(FOLLOW_GRAPH_KEY, graph);
 }
