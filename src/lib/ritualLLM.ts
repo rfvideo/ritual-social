@@ -53,6 +53,68 @@ const TEE_REGISTRY_ABI = [
       },
     ],
   },
+  {
+    name: 'getCapabilityIndexStatus',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'capability', type: 'uint8' }],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'count', type: 'uint256' },
+          { name: 'finalized', type: 'bool' },
+          { name: 'lastUpdatedBlock', type: 'uint256' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'pickServiceByCapability',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'capability', type: 'uint8' },
+      { name: 'activeOnly', type: 'bool' },
+      { name: 'seed', type: 'uint256' },
+      { name: 'maxProbes', type: 'uint256' },
+    ],
+    outputs: [
+      { name: 'teeAddress', type: 'address' },
+      { name: 'found', type: 'bool' },
+    ],
+  },
+  {
+    name: 'getIndexedServiceByCapabilityAt',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'capability', type: 'uint8' },
+      { name: 'index', type: 'uint256' },
+    ],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          {
+            name: 'node',
+            type: 'tuple',
+            components: [
+              { name: 'paymentAddress', type: 'address' },
+              { name: 'teeAddress', type: 'address' },
+              { name: 'teeType', type: 'uint8' },
+              { name: 'publicKey', type: 'bytes' },
+              { name: 'endpoint', type: 'string' },
+              { name: 'certPubKeyHash', type: 'bytes32' },
+              { name: 'capability', type: 'uint8' },
+            ],
+          },
+          { name: 'isValid', type: 'bool' },
+          { name: 'workloadId', type: 'bytes32' },
+        ],
+      },
+    ],
+  },
 ] as const;
 
 interface LLMExecutor {
@@ -100,20 +162,91 @@ export async function ensureRitualWalletFunded(
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
+
+function isValidExecutor(s: {
+  node: {
+    teeAddress: Address;
+    publicKey: `0x${string}`;
+    certPubKeyHash: `0x${string}`;
+    endpoint: string;
+  };
+  isValid: boolean;
+}): boolean {
+  return (
+    s.isValid &&
+    s.node.teeAddress !== ZERO_ADDRESS &&
+    s.node.publicKey !== '0x' &&
+    s.node.publicKey.length > 2 &&
+    s.node.certPubKeyHash !== ZERO_BYTES32 &&
+    s.node.certPubKeyHash.length > 2 &&
+    s.node.endpoint.length > 0
+  );
+}
+
 export async function pickLLMExecutor(publicClient: PublicClient): Promise<LLMExecutor> {
+  // Prefer the indexed capability list when it is finalized — it is the
+  // canonical source of active TEE executors and avoids stale entries from
+  // getServicesByCapability. See ritual-dapp-contracts skill.
+  try {
+    const indexStatus = (await publicClient.readContract({
+      address: TEE_SERVICE_REGISTRY,
+      abi: TEE_REGISTRY_ABI,
+      functionName: 'getCapabilityIndexStatus',
+      args: [CAPABILITY_LLM],
+    })) as { count: bigint; finalized: boolean };
+
+    if (indexStatus.finalized && indexStatus.count > 0n) {
+      for (let i = 0n; i < indexStatus.count; i++) {
+        const service = (await publicClient.readContract({
+          address: TEE_SERVICE_REGISTRY,
+          abi: TEE_REGISTRY_ABI,
+          functionName: 'getIndexedServiceByCapabilityAt',
+          args: [CAPABILITY_LLM, i],
+        })) as {
+          node: {
+            teeAddress: Address;
+            publicKey: `0x${string}`;
+            certPubKeyHash: `0x${string}`;
+            endpoint: string;
+          };
+          isValid: boolean;
+        };
+
+        if (isValidExecutor(service)) {
+          return { teeAddress: service.node.teeAddress, publicKey: service.node.publicKey };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[pickLLMExecutor] indexed executor lookup failed, falling back:', err);
+  }
+
+  // Fallback: legacy registry enumeration. Filter strictly so we never pick
+  // an executor without a public key / cert hash — that is what causes the
+  // on-chain "failed to get cert hash" error.
   const services = (await publicClient.readContract({
     address: TEE_SERVICE_REGISTRY,
     abi: TEE_REGISTRY_ABI,
     functionName: 'getServicesByCapability',
     args: [CAPABILITY_LLM, true],
   })) as readonly {
-    node: { teeAddress: Address; publicKey: `0x${string}` };
+    node: {
+      teeAddress: Address;
+      publicKey: `0x${string}`;
+      certPubKeyHash: `0x${string}`;
+      endpoint: string;
+    };
     isValid: boolean;
   }[];
 
-  const valid = services.find((s) => s.isValid && s.node.teeAddress !== '0x0000000000000000000000000000000000000000');
+  const valid = services.find(isValidExecutor);
   if (!valid) {
-    throw new Error('No LLM-capable executor is currently available on Ritual Chain.');
+    throw new Error(
+      'No LLM-capable executor is currently available on Ritual Chain. ' +
+        'All indexed/registered services lack a public key, cert hash, or endpoint.',
+    );
   }
   return { teeAddress: valid.node.teeAddress, publicKey: valid.node.publicKey };
 }
