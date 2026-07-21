@@ -9,7 +9,7 @@ import { ModerationWarningDialog } from '@/components/ai/ModerationWarningDialog
 import { PublishFlowDialog, type IpfsStatus } from './PublishFlowDialog';
 import { ShieldCheck, Loader2 as Spinner } from 'lucide-react';
 import { useModeration } from '@/hooks/useAI';
-import { useRitualModeration } from '@/hooks/useRitualModeration';
+import { useRitualModeration, type RitualModerationResult } from '@/hooks/useRitualModeration';
 import { useCreatePost } from '@/hooks/useRitualSocial';
 import { useInvalidateFeed } from '@/hooks/usePosts';
 import { useProfile } from '@/hooks/useProfile';
@@ -34,7 +34,7 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
 
   const { run: runModeration, loading: moderationLoading } = useModeration();
   const { moderate: runRitualModeration, stage: ritualModerationStage } = useRitualModeration();
-  const [ritualVerdict, setRitualVerdict] = useState<{ flagged: boolean; reason: string } | null>(null);
+  const [ritualVerdict, setRitualVerdict] = useState<RitualModerationResult | null>(null);
   const { createPost, stage, reset } = useCreatePost();
   const invalidateFeed = useInvalidateFeed();
   const { address } = useAccount();
@@ -223,10 +223,16 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
                   </span>
                 </div>
                 {ritualVerdict && (
-                  <p className={`mt-1.5 text-xs ${ritualVerdict.flagged ? 'text-red-400' : 'text-ritual-400'}`}>
-                    {ritualVerdict.flagged
-                      ? `⚠ Ritual AI flagged this: ${ritualVerdict.reason}`
-                      : '✓ Verified safe by Ritual AI (on-chain, TEE-verified)'}
+                  <p
+                    className={`mt-1.5 text-xs ${
+                      ritualVerdict.errored ? 'text-yellow-400' : ritualVerdict.flagged ? 'text-red-400' : 'text-ritual-400'
+                    }`}
+                  >
+                    {ritualVerdict.errored
+                      ? `⚠ Ritual AI check didn't complete: ${ritualVerdict.reason}`
+                      : ritualVerdict.flagged
+                        ? `⚠ Ritual AI flagged this: ${ritualVerdict.reason}`
+                        : '✓ Verified safe by Ritual AI (on-chain, TEE-verified)'}
                   </p>
                 )}
 
@@ -270,4 +276,4 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
       />
     </AnimatePresence>
   );
-    }
+                                                           }
