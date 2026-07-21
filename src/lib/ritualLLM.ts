@@ -142,8 +142,6 @@ export async function callRitualLLM(
     chain: walletClient.chain,
   });
 
-  await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
-
   const POLL_INTERVAL_MS = 4000;
   const MAX_WAIT_MS = 110_000;
   const startedAt = Date.now();
@@ -153,15 +151,24 @@ export async function callRitualLLM(
 
   while (Date.now() - startedAt < MAX_WAIT_MS) {
     attempts++;
-    const receipt = await publicClient.getTransactionReceipt({ hash });
-    const decoded = decodeLLMReceipt(receipt);
-    if (!decoded.pending) {
-      return decoded;
+    try {
+      const receipt = await publicClient.getTransactionReceipt({ hash });
+      const decoded = decodeLLMReceipt(receipt);
+      if (!decoded.pending) {
+        return decoded;
+      }
+      lastResult = {
+        ...decoded,
+        errorMessage: `${decoded.errorMessage} — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
+      };
+    } catch {
+      lastResult = {
+        hasError: true,
+        pending: true,
+        errorMessage: `Transaction temporarily not found (settlement in progress) — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
+        content: '',
+      };
     }
-    lastResult = {
-      ...decoded,
-      errorMessage: `${decoded.errorMessage} — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
-    };
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
@@ -229,4 +236,4 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-}
+    }
