@@ -141,8 +141,23 @@ export async function callRitualLLM(
     chain: walletClient.chain,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
-  return decodeLLMReceipt(receipt);
+  const POLL_INTERVAL_MS = 4000;
+  const MAX_WAIT_MS = 110_000;
+  const startedAt = Date.now();
+
+  let lastResult: LLMCallResult = { hasError: true, errorMessage: 'Timed out waiting for settlement.', content: '' };
+
+  while (Date.now() - startedAt < MAX_WAIT_MS) {
+    const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+    const decoded = decodeLLMReceipt(receipt);
+    if (decoded.errorMessage !== 'No settled LLM result found in this transaction yet.') {
+      return decoded;
+    }
+    lastResult = decoded;
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+
+  return lastResult;
 }
 
 function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
@@ -200,4 +215,4 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-      }
+  }
