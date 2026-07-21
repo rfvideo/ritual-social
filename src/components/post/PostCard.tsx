@@ -6,6 +6,7 @@ import { WalletBadge } from '@/components/wallet/WalletBadge';
 import { ExplorerLink } from '@/components/common/ExplorerLink';
 import { AIExplainTerms } from '@/components/ai/AIExplainTerms';
 import { PostActions } from './PostActions';
+import { PostMenu } from './PostMenu';
 import { resolveIpfsUri } from '@/lib/ipfs';
 import { formatRelativeTime, tokenizeCaption } from '@/lib/utils';
 import type { PostRecord } from '@/types';
@@ -70,14 +71,20 @@ export function PostCard({ post }: { post: PostRecord }) {
         </Link>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Link to={`/profile/${post.author.address}`} className="font-semibold text-mist-light hover:underline">
-              {post.author.displayName}
-            </Link>
-            <span className="text-sm text-mist-dim">@{post.author.username}</span>
-            <WalletBadge address={post.author.address} />
-            <span className="text-mist-dim">·</span>
-            <span className="text-sm text-mist-dim">{formatRelativeTime(post.createdAt)}</span>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Link to={`/profile/${post.author.address}`} className="font-semibold text-mist-light hover:underline">
+                {post.author.displayName}
+              </Link>
+              <span className="text-sm text-mist-dim">@{post.author.username}</span>
+              <WalletBadge address={post.author.address} />
+              <span className="text-mist-dim">·</span>
+              <span className="text-sm text-mist-dim">
+                {formatRelativeTime(post.createdAt)}
+                {post.edited && ' · edited'}
+              </span>
+            </div>
+            <PostMenu post={post} />
           </div>
 
           <Link to={`/post/${post.id}`}>
