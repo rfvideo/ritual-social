@@ -1,4 +1,4 @@
-import RitualSocialAbi from './abi/RitualSocial.json';
+import RitualSocialAbi from './abi/RitualSocialV2.json';
 import RitualTreasuryAbi from './abi/RitualTreasury.json';
 import { RITUAL_SOCIAL_ADDRESS, RITUAL_TREASURY_ADDRESS } from '@/config/constants';
 
