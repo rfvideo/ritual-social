@@ -186,46 +186,30 @@ function isValidExecutor(s: {
 }
 
 export async function pickLLMExecutor(publicClient: PublicClient): Promise<LLMExecutor> {
-  // Prefer the indexed capability list when it is finalized — it is the
-  // canonical source of active TEE executors and avoids stale entries from
-  // getServicesByCapability. See ritual-dapp-contracts skill.
+  // The canonical registry on the live Ritual Chain (chain id 1979) exposes
+  // pickServiceByCapability. The contract reverts for getCapabilityIndexStatus,
+  // so we use the registry's own selector and then resolve the public key from
+  // the full service list. See ritual-dapp-contracts / ritual-dapp-llm skills.
+  const latestBlock = await publicClient.getBlock({ blockTag: 'latest' });
+  const seed = BigInt(latestBlock.hash);
+
+  let pickedAddress: Address | null = null;
   try {
-    const indexStatus = (await publicClient.readContract({
+    const [teeAddress, found] = (await publicClient.readContract({
       address: TEE_SERVICE_REGISTRY,
       abi: TEE_REGISTRY_ABI,
-      functionName: 'getCapabilityIndexStatus',
-      args: [CAPABILITY_LLM],
-    })) as { count: bigint; finalized: boolean };
-
-    if (indexStatus.finalized && indexStatus.count > 0n) {
-      for (let i = 0n; i < indexStatus.count; i++) {
-        const service = (await publicClient.readContract({
-          address: TEE_SERVICE_REGISTRY,
-          abi: TEE_REGISTRY_ABI,
-          functionName: 'getIndexedServiceByCapabilityAt',
-          args: [CAPABILITY_LLM, i],
-        })) as {
-          node: {
-            teeAddress: Address;
-            publicKey: `0x${string}`;
-            certPubKeyHash: `0x${string}`;
-            endpoint: string;
-          };
-          isValid: boolean;
-        };
-
-        if (isValidExecutor(service)) {
-          return { teeAddress: service.node.teeAddress, publicKey: service.node.publicKey };
-        }
-      }
+      functionName: 'pickServiceByCapability',
+      args: [CAPABILITY_LLM, true, seed, 10n],
+    })) as readonly [Address, boolean];
+    if (found && teeAddress !== ZERO_ADDRESS) {
+      pickedAddress = teeAddress;
     }
   } catch (err) {
-    console.warn('[pickLLMExecutor] indexed executor lookup failed, falling back:', err);
+    console.warn('[pickLLMExecutor] pickServiceByCapability failed, falling back to enumeration:', err);
   }
 
-  // Fallback: legacy registry enumeration. Filter strictly so we never pick
-  // an executor without a public key / cert hash — that is what causes the
-  // on-chain "failed to get cert hash" error.
+  // Resolve the full service list to obtain the public key and verify the
+  // picked address is valid (non-zero public key, cert hash, and endpoint).
   const services = (await publicClient.readContract({
     address: TEE_SERVICE_REGISTRY,
     abi: TEE_REGISTRY_ABI,
@@ -241,11 +225,18 @@ export async function pickLLMExecutor(publicClient: PublicClient): Promise<LLMEx
     isValid: boolean;
   }[];
 
+  if (pickedAddress) {
+    const match = services.find((s) => s.isValid && s.node.teeAddress === pickedAddress && isValidExecutor(s));
+    if (match) {
+      return { teeAddress: match.node.teeAddress, publicKey: match.node.publicKey };
+    }
+  }
+
   const valid = services.find(isValidExecutor);
   if (!valid) {
     throw new Error(
       'No LLM-capable executor is currently available on Ritual Chain. ' +
-        'All indexed/registered services lack a public key, cert hash, or endpoint.',
+        'All registered services lack a public key, cert hash, or endpoint.',
     );
   }
   return { teeAddress: valid.node.teeAddress, publicKey: valid.node.publicKey };
@@ -272,38 +263,60 @@ export interface LLMCallResult {
   content: string;
 }
 
+export interface LLMCallOptions {
+  /**
+   * Optional DA (conversation-history) storage ref.
+   * Use `['', '', '']` when you don't need conversation history (e.g. one-shot
+   * moderation). Defaults to empty so no off-chain storage credentials are
+   * required, matching the official Ritual dapp-llm examples.
+   */
+  convoHistory?: [string, string, string];
+  /** Custom inference timeout in blocks. Defaults to 300 (safe for GLM-4.7-FP8). */
+  ttl?: bigint;
+}
+
 export async function callRitualLLM(
   publicClient: PublicClient,
   walletClient: WalletClient,
   account: Address,
   systemPrompt: string,
   userPrompt: string,
+  options: LLMCallOptions = {},
 ): Promise<LLMCallResult> {
   const executor = await pickLLMExecutor(publicClient);
-  const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
 
-  // Each encrypted secret blob must be signed by the transaction sender so the
-  // TEE executor can verify the secret was encrypted by the same EOA that
-  // submitted the precompile call (EIP-191 personal_sign over the raw bytes).
-  // Use viem's hexToBytes — Buffer is not available in the browser bundle.
-  const encryptedSecretBytes = hexToBytes(encryptedSecret);
-  const secretSignature = await walletClient.signMessage({
-    account,
-    message: { raw: encryptedSecretBytes },
-  });
+  const convoHistory: [string, string, string] = options.convoHistory ?? ['', '', ''];
+  const ttl = options.ttl ?? 300n;
+  const requiresDA = convoHistory[0] !== '' || convoHistory[2] !== '';
+
+  let encryptedSecrets: `0x${string}`[] = [];
+  let secretSignatures: `0x${string}`[] = [];
+
+  if (requiresDA) {
+    // Only encrypt DA credentials when we actually need off-chain storage.
+    // The executor uses the keyRef in convoHistory to look up the decrypted
+    // secret; for the look-up to work the secret value must be a plain string
+    // (not nested JSON). See ritual-dapp-da.
+    const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
+    const encryptedSecretBytes = hexToBytes(encryptedSecret);
+    const secretSignature = await walletClient.signMessage({
+      account,
+      message: { raw: encryptedSecretBytes },
+    });
+    encryptedSecrets = [encryptedSecret];
+    secretSignatures = [secretSignature];
+  }
 
   const messagesJson = JSON.stringify([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
 
-  const convoHistory: [string, string, string] = ['pinata', '', 'DA_PINATA_JWT'];
-
   const encoded: Hex = encodeAbiParameters(parseAbiParameters(LLM_REQUEST_TYPES), [
     executor.teeAddress,
-    [encryptedSecret],
-    300n,
-    [secretSignature],
+    encryptedSecrets,
+    ttl,
+    secretSignatures,
     '0x',
     messagesJson,
     MODEL,
