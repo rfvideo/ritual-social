@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ClipboardEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
 import { useAccount } from 'wagmi';
@@ -6,10 +6,11 @@ import toast from 'react-hot-toast';
 import { Avatar } from '@/components/common/Avatar';
 import { ImageUploader } from './ImageUploader';
 import { ModerationWarningDialog } from '@/components/ai/ModerationWarningDialog';
-import { ConfirmTxDialog } from '@/components/common/ConfirmTxDialog';
+import { PublishFlowDialog, type IpfsStatus } from './PublishFlowDialog';
 import { useModeration } from '@/hooks/useAI';
 import { useCreatePost } from '@/hooks/useRitualSocial';
 import { useInvalidateFeed } from '@/hooks/usePosts';
+import { useProfile } from '@/hooks/useProfile';
 import { uploadImagesOnly, uploadPostContent } from '@/lib/ipfs';
 import { extractHashtags, extractMentions } from '@/lib/utils';
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
@@ -18,7 +19,7 @@ import type { ModerationOutput } from '@/types';
 const MAX_CHARS = 400;
 
 export function PostComposer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [caption, setCaption] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [uploadedImageURIs, setUploadedImageURIs] = useState<string[]>([]);
@@ -27,10 +28,13 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   const [moderationResult, setModerationResult] = useState<ModerationOutput | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingContentURI, setPendingContentURI] = useState<string | null>(null);
+  const [ipfsStatus, setIpfsStatus] = useState<IpfsStatus>('uploading');
 
   const { run: runModeration, loading: moderationLoading } = useModeration();
   const { createPost, stage, reset } = useCreatePost();
   const invalidateFeed = useInvalidateFeed();
+  const { address } = useAccount();
+  const { data: myProfile } = useProfile(address);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +68,7 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
     setModerationResult(null);
     setConfirmOpen(false);
     setPendingContentURI(null);
+    setIpfsStatus('uploading');
     reset();
     onClose();
   }
@@ -86,6 +91,8 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   async function doUploadAndOpenConfirm() {
+    setConfirmOpen(true);
+    setIpfsStatus('uploading');
     setUploading(true);
     try {
       const contentURI = await uploadPostContent({
@@ -96,8 +103,9 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
         mentions: extractMentions(caption),
       });
       setPendingContentURI(contentURI);
-      setConfirmOpen(true);
+      setIpfsStatus('done');
     } catch (err: any) {
+      setIpfsStatus('error');
       toast.error(err.message ?? 'Failed to upload to decentralized storage');
     } finally {
       setUploading(false);
@@ -108,8 +116,11 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
     if (!pendingContentURI) return;
     const result = await createPost(pendingContentURI);
     if (result?.status === 'success') {
+      toast.success('Post published! 🎉');
       invalidateFeed();
-      setTimeout(handleClose, 900);
+      setTimeout(handleClose, 1200);
+    } else {
+      toast.error('Failed to publish. Please try again.');
     }
   }
 
@@ -148,11 +159,24 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
             ) : (
               <>
                 <div className="flex gap-3">
-                  <Avatar address={address!} size="md" />
+                  <Avatar address={address!} uri={myProfile?.avatarURI} size="md" />
                   <div className="flex-1">
+                    {myProfile && (
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-mist-light">{myProfile.displayName}</span>
+                        <span className="text-xs text-mist-dim">@{myProfile.username}</span>
+                      </div>
+                    )}
                     <textarea
                       value={caption}
                       onChange={(e) => setCaption(e.target.value)}
+                      onPaste={(e: ClipboardEvent<HTMLTextAreaElement>) => {
+                        const item = Array.from(e.clipboardData.items).find((it) => it.type.startsWith('image/'));
+                        if (item && images.length < 4) {
+                          const file = item.getAsFile();
+                          if (file) setImages([...images, file]);
+                        }
+                      }}
                       placeholder="What's happening in the Ritual ecosystem?"
                       rows={4}
                       className="w-full resize-none bg-transparent text-[15px] text-mist-light placeholder:text-mist-dim focus:outline-none"
@@ -198,14 +222,18 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
         />
       )}
 
-      <ConfirmTxDialog
+      <PublishFlowDialog
         open={confirmOpen}
-        title="Confirm Publish"
-        description="This post will be sent as a real transaction on Ritual Chain."
-        stage={stage}
+        ipfsStatus={ipfsStatus}
+        txStage={stage}
         onConfirm={handleConfirmPublish}
         onClose={() => {
-          if (stage !== 'awaiting-wallet' && stage !== 'pending') setConfirmOpen(false);
+          if (stage !== 'awaiting-wallet' && stage !== 'pending') {
+            setConfirmOpen(false);
+            setPendingContentURI(null);
+            setIpfsStatus('uploading');
+            reset();
+          }
         }}
       />
     </AnimatePresence>
