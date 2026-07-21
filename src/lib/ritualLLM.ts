@@ -207,7 +207,14 @@ export async function callRitualLLM(
   while (Date.now() - startedAt < MAX_WAIT_MS) {
     attempts++;
     try {
-      const receipt = await publicClient.getTransactionReceipt({ hash });
+      // Ritual Chain adds a custom `spcCalls` field to the receipt. viem's
+      // typed TransactionReceipt does not declare it, so we read the raw RPC
+      // response and cast it to our RitualReceipt extension.
+      const receipt = (await publicClient.request({
+        method: 'eth_getTransactionReceipt',
+        params: [hash],
+      })) as TransactionReceipt & RitualReceipt;
+
       const decoded = decodeLLMReceipt(receipt);
       if (!decoded.pending) {
         return decoded;
@@ -230,6 +237,25 @@ export async function callRitualLLM(
   return lastResult;
 }
 
+/**
+ * Ritual Chain extends the standard transaction receipt with an `spcCalls`
+ * field for short-running async precompiles (HTTP 0x0801, LLM 0x0802).
+ * The settled result is here — NOT in the receipt logs. viem does not know
+ * this field by default, so we cast it from the raw receipt.
+ */
+interface RitualReceipt {
+  spcCalls?: Array<{ input: Hex; output: Hex }>;
+}
+
+function extractSpcOutput(receipt: TransactionReceipt): Hex | null {
+  const ritual = receipt as unknown as RitualReceipt;
+  const calls = ritual.spcCalls;
+  if (!calls || calls.length === 0) return null;
+  // At most one short-running async precompile per transaction; the LLM
+  // precompile's settled output is the first (and only) spcCall entry.
+  return calls[0].output;
+}
+
 function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   if (receipt.status === 'reverted') {
     return {
@@ -239,30 +265,12 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
     };
   }
 
-  const PRECOMPILE_CALLED_TOPIC = keccak256(toHex('PrecompileCalled(address,bytes,bytes)'));
-
-  let raw: Hex | null = null;
-  let matchingLogFound = false;
-
-  for (const log of receipt.logs) {
-    if (log.topics[0] !== PRECOMPILE_CALLED_TOPIC) continue;
-    const [addr, , output] = decodeAbiParameters(parseAbiParameters('address, bytes, bytes'), log.data);
-    if ((addr as string).toLowerCase() !== LLM_PRECOMPILE) continue;
-
-    matchingLogFound = true;
-    try {
-      const [, actual] = decodeAbiParameters(parseAbiParameters('bytes, bytes'), output as Hex);
-      raw = actual as Hex;
-    } catch {
-      raw = output as Hex;
-    }
-    break;
-  }
+  const raw = extractSpcOutput(receipt);
 
   if (!raw || raw === '0x') {
-    const detail = matchingLogFound
-      ? 'PrecompileCalled log found but its output is still empty'
-      : `no PrecompileCalled log for 0x0802 among ${receipt.logs.length} log(s)`;
+    const detail = receipt.logs.length === 0
+      ? 'spcCalls not yet present on receipt'
+      : `spcCalls not yet present on receipt (receipt has ${receipt.logs.length} log(s), but short-running async precompiles write results to spcCalls, not logs)`;
     return { hasError: true, pending: true, errorMessage: `Not settled yet (${detail})`, content: '' };
   }
 
