@@ -149,6 +149,15 @@ export async function callRitualLLM(
   const executor = await pickLLMExecutor(publicClient);
   const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
 
+  // Each encrypted secret blob must be signed by the transaction sender so the
+  // TEE executor can verify the secret was encrypted by the same EOA that
+  // submitted the precompile call (EIP-191 personal_sign over the raw bytes).
+  const encryptedSecretBytes = Buffer.from(encryptedSecret.slice(2), 'hex');
+  const secretSignature = await walletClient.signMessage({
+    account,
+    message: { raw: encryptedSecretBytes },
+  });
+
   const messagesJson = JSON.stringify([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
@@ -160,7 +169,7 @@ export async function callRitualLLM(
     executor.teeAddress,
     [encryptedSecret],
     300n,
-    [],
+    [secretSignature],
     '0x',
     messagesJson,
     MODEL,
