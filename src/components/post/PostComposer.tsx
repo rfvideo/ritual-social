@@ -7,7 +7,9 @@ import { Avatar } from '@/components/common/Avatar';
 import { ImageUploader } from './ImageUploader';
 import { ModerationWarningDialog } from '@/components/ai/ModerationWarningDialog';
 import { PublishFlowDialog, type IpfsStatus } from './PublishFlowDialog';
+import { ShieldCheck, Loader2 as Spinner } from 'lucide-react';
 import { useModeration } from '@/hooks/useAI';
+import { useRitualModeration } from '@/hooks/useRitualModeration';
 import { useCreatePost } from '@/hooks/useRitualSocial';
 import { useInvalidateFeed } from '@/hooks/usePosts';
 import { useProfile } from '@/hooks/useProfile';
@@ -31,6 +33,8 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
   const [ipfsStatus, setIpfsStatus] = useState<IpfsStatus>('uploading');
 
   const { run: runModeration, loading: moderationLoading } = useModeration();
+  const { moderate: runRitualModeration, stage: ritualModerationStage } = useRitualModeration();
+  const [ritualVerdict, setRitualVerdict] = useState<{ flagged: boolean; reason: string } | null>(null);
   const { createPost, stage, reset } = useCreatePost();
   const invalidateFeed = useInvalidateFeed();
   const { address } = useAccount();
@@ -190,13 +194,41 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-end border-t border-ash-200 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-ash-200 pt-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setRitualVerdict(null);
+                      const result = await runRitualModeration(caption);
+                      if (result) setRitualVerdict(result);
+                    }}
+                    disabled={!caption.trim() || ritualModerationStage === 'funding' || ritualModerationStage === 'awaiting-inference'}
+                    className="flex items-center gap-1.5 text-xs text-ritual-400 hover:text-ritual-300 disabled:opacity-40"
+                  >
+                    {ritualModerationStage === 'funding' || ritualModerationStage === 'awaiting-inference' ? (
+                      <>
+                        <Spinner size={12} className="animate-spin" />
+                        {ritualModerationStage === 'funding' ? 'Funding RitualWallet…' : 'Verifying on-chain…'}
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={12} /> Verify with Ritual AI
+                      </>
+                    )}
+                  </button>
                   <span
                     className={`text-xs font-mono ${overLimit ? 'text-red-400' : nearLimit ? 'text-yellow-400' : 'text-mist-dim'}`}
                   >
                     {caption.length}/{MAX_CHARS}
                   </span>
                 </div>
+                {ritualVerdict && (
+                  <p className={`mt-1.5 text-xs ${ritualVerdict.flagged ? 'text-red-400' : 'text-ritual-400'}`}>
+                    {ritualVerdict.flagged
+                      ? `⚠ Ritual AI flagged this: ${ritualVerdict.reason}`
+                      : '✓ Verified safe by Ritual AI (on-chain, TEE-verified)'}
+                  </p>
+                )}
 
                 <button
                   onClick={proceedToPublish}
@@ -238,4 +270,4 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
       />
     </AnimatePresence>
   );
-}
+    }
