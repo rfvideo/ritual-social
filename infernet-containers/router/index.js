@@ -14,9 +14,11 @@ const app = express();
 app.use(express.json({ limit: '15mb' }));
 
 const CONTAINER_URLS = {
-  'ritual-translate': process.env.TRANSLATE_URL || 'http://translate:8000',
-  'ritual-caption': process.env.CAPTION_URL || 'http://caption:8000',
-  'ritual-moderate': process.env.MODERATE_URL || 'http://moderate:8000',
+  'ritual-translate': process.env.TRANSLATE_URL  || 'http://translate:8000',
+  'ritual-caption':   process.env.CAPTION_URL    || 'http://caption:8000',
+  'ritual-moderate':  process.env.MODERATE_URL   || 'http://moderate:8000',
+  'ritual-summarize': process.env.SUMMARIZE_URL  || 'http://summarize:8000',
+  'ritual-recommend': process.env.RECOMMEND_URL  || 'http://recommend:8000',
 };
 
 app.post('/api/jobs', async (req, res) => {
@@ -48,7 +50,7 @@ app.post('/api/jobs', async (req, res) => {
   }
 });
 
-app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/healthz', (_req, res) => res.json({ ok: true, containers: Object.keys(CONTAINER_URLS) }));
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`[router] listening on :${port}`));
+app.listen(port, () => console.log(`[router] listening on :${port} — registered: ${Object.keys(CONTAINER_URLS).join(', ')}`));

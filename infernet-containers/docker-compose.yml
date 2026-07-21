@@ -1,29 +1,57 @@
 version: '3.8'
+
+# Self-hosted Ritual AI compute layer.
+# Run with: docker compose up --build
+# Set INFERNET_ROUTER_URL=http://localhost:4000 in your .env.
+
 services:
   router:
     build: ./router
     ports:
       - '4000:4000'
     environment:
-      TRANSLATE_URL: http://translate:8000
-      CAPTION_URL: http://caption:8000
-      MODERATE_URL: http://moderate:8000
+      TRANSLATE_URL:  http://translate:8000
+      CAPTION_URL:    http://caption:8000
+      MODERATE_URL:   http://moderate:8000
+      SUMMARIZE_URL:  http://summarize:8000
+      RECOMMEND_URL:  http://recommend:8000
     depends_on:
       - translate
       - caption
       - moderate
+      - summarize
+      - recommend
 
+  # Real multilingual translation — facebook/nllb-200-distilled-600M (~2.4 GB)
   translate:
     build: ./translate
     expose:
       - '8000'
+    environment:
+      IPFS_GATEWAY: ${VITE_IPFS_GATEWAY:-https://w3s.link/ipfs/}
 
+  # Real image captioning — Salesforce/blip-image-captioning-base (~1 GB)
   caption:
     build: ./caption
     expose:
       - '8000'
+    environment:
+      IPFS_GATEWAY: ${VITE_IPFS_GATEWAY:-https://w3s.link/ipfs/}
 
+  # Real toxicity detection — unitary/toxic-bert (~250 MB)
   moderate:
     build: ./moderate
+    expose:
+      - '8000'
+
+  # Real abstractive summarization — facebook/bart-large-cnn (~1.6 GB)
+  summarize:
+    build: ./summarize
+    expose:
+      - '8000'
+
+  # Engagement-weighted feed ranking — no model download required
+  recommend:
+    build: ./recommend
     expose:
       - '8000'

@@ -109,3 +109,17 @@ export interface ExplainOutput {
   term: string;
   explanation: string;
 }
+
+/**
+ * Engagement signals sent to ai-recommend for server-side ranking.
+ * Include createdAt (unix seconds from the chain timestamp) so the
+ * container can apply time decay alongside engagement scoring.
+ */
+export interface PostSignal {
+  postId: string;
+  likeCount: number;
+  commentCount: number;
+  repostCount: number;
+  /** Unix timestamp in seconds — use chainTimestampToMs() / 1000 from src/lib/utils.ts */
+  createdAt: number;
+}
