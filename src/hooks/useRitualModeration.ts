@@ -8,6 +8,7 @@ export type ModerationStage = 'idle' | 'funding' | 'selecting-executor' | 'await
 export interface RitualModerationResult {
   flagged: boolean;
   reason: string;
+  errored?: boolean;
 }
 
 const SYSTEM_PROMPT =
@@ -47,8 +48,7 @@ export function useRitualModeration() {
 
         if (result.hasError) {
           setStage('error');
-          toast.error(`Ritual AI moderation failed: ${result.errorMessage || 'unknown error'}`);
-          return null;
+          return { flagged: false, reason: result.errorMessage || 'unknown error', errored: true };
         }
 
         setStage('done');
@@ -59,12 +59,12 @@ export function useRitualModeration() {
         return { flagged: false, reason: '' };
       } catch (err: any) {
         setStage('error');
-        toast.error(err?.shortMessage ?? err?.message ?? 'Ritual AI moderation failed');
-        return null;
+        const message = err?.shortMessage ?? err?.message ?? 'Ritual AI moderation failed';
+        return { flagged: false, reason: message, errored: true };
       }
     },
     [publicClient, walletClient, address],
   );
 
   return { moderate, stage, reset: () => setStage('idle') };
-                  }
+                                           }
