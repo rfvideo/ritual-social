@@ -82,6 +82,7 @@ export async function pickLLMExecutor(publicClient: PublicClient): Promise<Addre
 
 export interface LLMCallResult {
   hasError: boolean;
+  pending?: boolean;
   errorMessage: string;
   content: string;
 }
@@ -141,19 +142,26 @@ export async function callRitualLLM(
     chain: walletClient.chain,
   });
 
+  await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+
   const POLL_INTERVAL_MS = 4000;
   const MAX_WAIT_MS = 110_000;
   const startedAt = Date.now();
 
   let lastResult: LLMCallResult = { hasError: true, errorMessage: 'Timed out waiting for settlement.', content: '' };
+  let attempts = 0;
 
   while (Date.now() - startedAt < MAX_WAIT_MS) {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+    attempts++;
+    const receipt = await publicClient.getTransactionReceipt({ hash });
     const decoded = decodeLLMReceipt(receipt);
-    if (decoded.errorMessage !== 'No settled LLM result found in this transaction yet.') {
+    if (!decoded.pending) {
       return decoded;
     }
-    lastResult = decoded;
+    lastResult = {
+      ...decoded,
+      errorMessage: `${decoded.errorMessage} — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
+    };
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
@@ -164,11 +172,14 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   const PRECOMPILE_CALLED_TOPIC = keccak256(toHex('PrecompileCalled(address,bytes,bytes)'));
 
   let raw: Hex | null = null;
+  let matchingLogFound = false;
+
   for (const log of receipt.logs) {
     if (log.topics[0] !== PRECOMPILE_CALLED_TOPIC) continue;
     const [addr, , output] = decodeAbiParameters(parseAbiParameters('address, bytes, bytes'), log.data);
     if ((addr as string).toLowerCase() !== LLM_PRECOMPILE) continue;
 
+    matchingLogFound = true;
     try {
       const [, actual] = decodeAbiParameters(parseAbiParameters('bytes, bytes'), output as Hex);
       raw = actual as Hex;
@@ -179,7 +190,10 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   }
 
   if (!raw || raw === '0x') {
-    return { hasError: true, errorMessage: 'No settled LLM result found in this transaction yet.', content: '' };
+    const detail = matchingLogFound
+      ? 'PrecompileCalled log found but its output is still empty'
+      : `no PrecompileCalled log for 0x0802 among ${receipt.logs.length} log(s)`;
+    return { hasError: true, pending: true, errorMessage: `Not settled yet (${detail})`, content: '' };
   }
 
   const [hasError, completionData, , errorMessage] = decodeAbiParameters(
@@ -215,4 +229,4 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-  }
+}
