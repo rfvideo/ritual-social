@@ -79,9 +79,9 @@ async function loadFeed(
         abi: ritualSocialContract.abi,
         functionName: 'posts',
         args: [postId],
-      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
+      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean, boolean];
 
-      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists] =
+      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists, edited] =
         rawStruct;
 
       if (!exists) return null;
@@ -132,6 +132,7 @@ async function loadFeed(
         viewCount: 0,
         isRepost,
         originalPostId: isRepost ? String(originalPostId) : undefined,
+        edited,
         onChain: {
           txHash: txByPostId.get(postId.toString()) ?? ('0x0' as `0x${string}`),
           blockNumber: 0,
@@ -189,9 +190,9 @@ export function usePost(postId?: string) {
         abi: ritualSocialContract.abi,
         functionName: 'posts',
         args: [id],
-      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean];
+      })) as unknown as [string, string, bigint, bigint, bigint, bigint, boolean, bigint, boolean, boolean];
 
-      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists] =
+      const [author, contentURI, timestamp, likeCount, commentCount, repostCount, isRepost, originalPostId, exists, edited] =
         rawStruct;
 
       if (!exists) throw new Error('Post not found');
@@ -229,6 +230,7 @@ export function usePost(postId?: string) {
         viewCount: 0,
         isRepost,
         originalPostId: isRepost ? String(originalPostId) : undefined,
+        edited,
         onChain: {
           txHash: '0x0' as `0x${string}`,
           blockNumber: 0,
@@ -252,4 +254,4 @@ export function useInvalidateFeed() {
 
 export function postExplorerUrl(txHash: string) {
   return explorerTxUrl(txHash);
-                }
+                     }
