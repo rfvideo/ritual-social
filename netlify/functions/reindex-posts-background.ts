@@ -29,13 +29,20 @@ const POST_LIKED_EVENT = parseAbiItem(
   'event PostLiked(uint256 indexed postId, address indexed liker, address indexed author, uint64 timestamp)',
 );
 const COMMENT_ADDED_EVENT = parseAbiItem(
-  'event CommentAdded(uint256 indexed commentId, uint256 indexed postId, address indexed author, string contentURI, uint64 timestamp)',
+  'event CommentAdded(uint256 indexed commentId, uint256 indexed postId, uint256 parentCommentId, address indexed author, string contentURI, uint64 timestamp)',
 );
 const POST_REPOSTED_EVENT = parseAbiItem(
   'event PostReposted(uint256 indexed postId, uint256 indexed newPostId, address indexed reposter, uint64 timestamp)',
 );
 const FOLLOWED_EVENT = parseAbiItem('event Followed(address indexed follower, address indexed followee, uint64 timestamp)');
 const UNFOLLOWED_EVENT = parseAbiItem('event Unfollowed(address indexed follower, address indexed followee, uint64 timestamp)');
+
+function chainTimestampToMs(raw: bigint | number): number {
+  const n = Number(raw);
+  const asSeconds = n * 1000;
+  const YEAR_2100_MS = 4_102_444_800_000;
+  return asSeconds > YEAR_2100_MS ? n : asSeconds;
+}
 
 function resolveIpfs(uri: string): string {
   if (uri.startsWith('ipfs://')) return `${IPFS_GATEWAY.replace(/\/$/, '')}/${uri.replace('ipfs://', '')}`;
@@ -151,7 +158,7 @@ export default async () => {
           actor: log.args.liker as string,
           targetUser: log.args.author as string,
           postId: (log.args.postId as bigint).toString(),
-          timestamp: Number(log.args.timestamp) * 1000,
+          timestamp: chainTimestampToMs(log.args.timestamp!),
           blockNumber: log.blockNumber!.toString(),
         });
       }
@@ -162,7 +169,7 @@ export default async () => {
           kind: 'follow',
           actor: log.args.follower as string,
           targetUser: log.args.followee as string,
-          timestamp: Number(log.args.timestamp) * 1000,
+          timestamp: chainTimestampToMs(log.args.timestamp!),
           blockNumber: log.blockNumber!.toString(),
         });
       }
@@ -178,7 +185,7 @@ export default async () => {
           targetUser: postAuthor,
           postId: (log.args.postId as bigint).toString(),
           commentText,
-          timestamp: Number(log.args.timestamp) * 1000,
+          timestamp: chainTimestampToMs(log.args.timestamp!),
           blockNumber: log.blockNumber!.toString(),
         });
       }
@@ -192,7 +199,7 @@ export default async () => {
           actor: log.args.reposter as string,
           targetUser: postAuthor,
           postId: (log.args.postId as bigint).toString(),
-          timestamp: Number(log.args.timestamp) * 1000,
+          timestamp: chainTimestampToMs(log.args.timestamp!),
           blockNumber: log.blockNumber!.toString(),
         });
       }
