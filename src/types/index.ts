@@ -37,6 +37,7 @@ export interface PostRecord {
   viewCount: number;
   isRepost: boolean;
   originalPostId?: string;
+  edited?: boolean;
   onChain: OnChainMeta;
   likedByMe?: boolean;
   repostedByMe?: boolean;
@@ -46,9 +47,14 @@ export interface PostRecord {
 export interface CommentRecord {
   id: string;
   postId: string;
+  parentCommentId: string;
   author: UserProfile;
   body: string;
   createdAt: number;
+  likeCount: number;
+  replyCount: number;
+  likedByMe?: boolean;
+  edited: boolean;
   onChain: OnChainMeta;
 }
 
@@ -64,7 +70,6 @@ export interface NotificationRecord {
   read: boolean;
 }
 
-/** Infernet-style job envelope returned by every /netlify/functions/ai-* endpoint. */
 export interface InfernetJobResult<T> {
   jobId: string;
   status: 'completed' | 'failed' | 'pending';
