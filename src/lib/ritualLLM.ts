@@ -176,6 +176,14 @@ export async function callRitualLLM(
 }
 
 function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
+  if (receipt.status === 'reverted') {
+    return {
+      hasError: true,
+      errorMessage: `Transaction reverted on-chain (not an async-settlement issue). Block ${receipt.blockNumber}, gasUsed ${receipt.gasUsed}.`,
+      content: '',
+    };
+  }
+
   const PRECOMPILE_CALLED_TOPIC = keccak256(toHex('PrecompileCalled(address,bytes,bytes)'));
 
   let raw: Hex | null = null;
@@ -236,4 +244,4 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-    }
+}
