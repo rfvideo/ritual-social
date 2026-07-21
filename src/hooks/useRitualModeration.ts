@@ -38,7 +38,12 @@ export function useRitualModeration() {
 
         setStage('selecting-executor');
         setStage('awaiting-inference');
+        toast.loading('Waiting for the TEE executor to settle on-chain — this can take up to ~100s…', {
+          id: 'ritual-llm',
+          duration: 8000,
+        });
         const result = await callRitualLLM(publicClient, walletClient, address, SYSTEM_PROMPT, text);
+        toast.dismiss('ritual-llm');
 
         if (result.hasError) {
           setStage('error');
@@ -62,4 +67,4 @@ export function useRitualModeration() {
   );
 
   return { moderate, stage, reset: () => setStage('idle') };
-}
+                  }
