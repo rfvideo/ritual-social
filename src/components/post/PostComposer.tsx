@@ -232,7 +232,9 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
                       ? `⚠ Ritual AI check didn't complete: ${ritualVerdict.reason}`
                       : ritualVerdict.flagged
                         ? `⚠ Ritual AI flagged this: ${ritualVerdict.reason}`
-                        : '✓ Verified safe by Ritual AI (on-chain, TEE-verified)'}
+                        : ritualVerdict.fallback
+                          ? '✓ Verified safe by AI moderation (on-chain executor unavailable, used local fallback)'
+                          : '✓ Verified safe by Ritual AI (on-chain, TEE-verified)'}
                   </p>
                 )}
 
