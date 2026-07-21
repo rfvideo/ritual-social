@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { usePost } from '@/hooks/usePosts';
@@ -10,6 +11,7 @@ import { ErrorState } from '@/components/common/States';
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
   const { data: post, isLoading, isError, refetch } = usePost(postId);
+  const [replyTo, setReplyTo] = useState<{ commentId: string; username: string } | null>(null);
 
   return (
     <div>
@@ -26,8 +28,8 @@ export function PostDetailPage() {
 
       {postId && (
         <>
-          <CommentComposer postId={postId} />
-          <CommentList postId={postId} />
+          <CommentComposer postId={postId} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+          <CommentList postId={postId} onReply={(commentId, username) => setReplyTo({ commentId, username })} />
         </>
       )}
     </div>
