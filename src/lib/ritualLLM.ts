@@ -18,6 +18,7 @@ const LLM_REQUEST_TYPES = [
 const RITUAL_WALLET_ABI = [
   { name: 'deposit', type: 'function', stateMutability: 'payable', inputs: [{ name: 'lockDuration', type: 'uint256' }], outputs: [] },
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'lockUntil', type: 'function', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'uint256' }] },
 ] as const;
 
 const TEE_REGISTRY_ABI = [
@@ -45,21 +46,33 @@ export async function ensureRitualWalletFunded(
   minBalanceWei = 400_000_000_000_000_000n,
   depositWei = 500_000_000_000_000_000n,
 ): Promise<void> {
-  const balance = (await publicClient.readContract({
-    address: RITUAL_WALLET,
-    abi: RITUAL_WALLET_ABI,
-    functionName: 'balanceOf',
-    args: [account],
-  })) as bigint;
+  const [balance, lockUntil, currentBlock] = await Promise.all([
+    publicClient.readContract({
+      address: RITUAL_WALLET,
+      abi: RITUAL_WALLET_ABI,
+      functionName: 'balanceOf',
+      args: [account],
+    }) as Promise<bigint>,
+    publicClient.readContract({
+      address: RITUAL_WALLET,
+      abi: RITUAL_WALLET_ABI,
+      functionName: 'lockUntil',
+      args: [account],
+    }) as Promise<bigint>,
+    publicClient.getBlockNumber(),
+  ]);
 
-  if (balance >= minBalanceWei) return;
+  const SAFE_LOCK_BUFFER = 1000n;
+  const lockCoversCall = lockUntil >= currentBlock + SAFE_LOCK_BUFFER;
+
+  if (balance >= minBalanceWei && lockCoversCall) return;
 
   const hash = await walletClient.writeContract({
     address: RITUAL_WALLET,
     abi: RITUAL_WALLET_ABI,
     functionName: 'deposit',
-    args: [5000n],
-    value: depositWei,
+    args: [100_000n],
+    value: balance >= minBalanceWei ? 1n : depositWei,
     account,
     chain: walletClient.chain,
   });
