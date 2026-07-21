@@ -23,21 +23,42 @@ const RITUAL_WALLET_ABI = [
 
 const TEE_REGISTRY_ABI = [
   {
-    name: 'pickServiceByCapability',
+    name: 'getServicesByCapability',
     type: 'function',
     stateMutability: 'view',
     inputs: [
       { name: 'capability', type: 'uint8' },
-      { name: 'checkValidity', type: 'bool' },
-      { name: 'seed', type: 'uint256' },
-      { name: 'maxProbes', type: 'uint256' },
+      { name: 'activeOnly', type: 'bool' },
     ],
     outputs: [
-      { name: 'teeAddress', type: 'address' },
-      { name: 'found', type: 'bool' },
+      {
+        type: 'tuple[]',
+        components: [
+          {
+            name: 'node',
+            type: 'tuple',
+            components: [
+              { name: 'paymentAddress', type: 'address' },
+              { name: 'teeAddress', type: 'address' },
+              { name: 'teeType', type: 'uint8' },
+              { name: 'publicKey', type: 'bytes' },
+              { name: 'endpoint', type: 'string' },
+              { name: 'certPubKeyHash', type: 'bytes32' },
+              { name: 'capability', type: 'uint8' },
+            ],
+          },
+          { name: 'isValid', type: 'bool' },
+          { name: 'workloadId', type: 'bytes32' },
+        ],
+      },
     ],
   },
 ] as const;
+
+interface LLMExecutor {
+  teeAddress: Address;
+  publicKey: `0x${string}`;
+}
 
 export async function ensureRitualWalletFunded(
   publicClient: PublicClient,
@@ -79,18 +100,36 @@ export async function ensureRitualWalletFunded(
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
-export async function pickLLMExecutor(publicClient: PublicClient): Promise<Address> {
-  const [teeAddress, found] = (await publicClient.readContract({
+export async function pickLLMExecutor(publicClient: PublicClient): Promise<LLMExecutor> {
+  const services = (await publicClient.readContract({
     address: TEE_SERVICE_REGISTRY,
     abi: TEE_REGISTRY_ABI,
-    functionName: 'pickServiceByCapability',
-    args: [CAPABILITY_LLM, true, BigInt(Math.floor(Math.random() * 1_000_000)), 8n],
-  })) as [Address, boolean];
+    functionName: 'getServicesByCapability',
+    args: [CAPABILITY_LLM, true],
+  })) as readonly {
+    node: { teeAddress: Address; publicKey: `0x${string}` };
+    isValid: boolean;
+  }[];
 
-  if (!found || teeAddress === '0x0000000000000000000000000000000000000000') {
+  const valid = services.find((s) => s.isValid && s.node.teeAddress !== '0x0000000000000000000000000000000000000000');
+  if (!valid) {
     throw new Error('No LLM-capable executor is currently available on Ritual Chain.');
   }
-  return teeAddress;
+  return { teeAddress: valid.node.teeAddress, publicKey: valid.node.publicKey };
+}
+
+async function fetchEncryptedSecret(executorPublicKey: `0x${string}`): Promise<`0x${string}`> {
+  const res = await fetch('/.netlify/functions/ritual-da-secrets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ executorPublicKey }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Failed to prepare DA credentials: ${detail || res.status}`);
+  }
+  const { encryptedSecret } = (await res.json()) as { encryptedSecret: `0x${string}` };
+  return encryptedSecret;
 }
 
 export interface LLMCallResult {
@@ -108,15 +147,18 @@ export async function callRitualLLM(
   userPrompt: string,
 ): Promise<LLMCallResult> {
   const executor = await pickLLMExecutor(publicClient);
+  const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
 
   const messagesJson = JSON.stringify([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
 
+  const convoHistory: [string, string, string] = ['pinata', '', 'DA_PINATA_JWT'];
+
   const encoded: Hex = encodeAbiParameters(parseAbiParameters(LLM_REQUEST_TYPES), [
-    executor,
-    [],
+    executor.teeAddress,
+    [encryptedSecret],
     300n,
     [],
     '0x',
@@ -144,7 +186,7 @@ export async function callRitualLLM(
     1000n,
     '',
     false,
-    ['', '', ''] as [string, string, string],
+    convoHistory,
   ]);
 
   const hash = await walletClient.sendTransaction({
