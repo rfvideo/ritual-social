@@ -1,4 +1,4 @@
-import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters, keccak256, toHex } from 'viem';
+import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters, keccak256, toHex, hexToBytes } from 'viem';
 import type { Hex, Address, PublicClient, WalletClient, TransactionReceipt } from 'viem';
 
 export const LLM_PRECOMPILE = '0x0000000000000000000000000000000000000802' as const;
@@ -152,7 +152,8 @@ export async function callRitualLLM(
   // Each encrypted secret blob must be signed by the transaction sender so the
   // TEE executor can verify the secret was encrypted by the same EOA that
   // submitted the precompile call (EIP-191 personal_sign over the raw bytes).
-  const encryptedSecretBytes = Buffer.from(encryptedSecret.slice(2), 'hex');
+  // Use viem's hexToBytes — Buffer is not available in the browser bundle.
+  const encryptedSecretBytes = hexToBytes(encryptedSecret);
   const secretSignature = await walletClient.signMessage({
     account,
     message: { raw: encryptedSecretBytes },
