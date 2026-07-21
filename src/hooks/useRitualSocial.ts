@@ -16,8 +16,13 @@ export interface TxResult {
 
 const GAS_LIMITS: Record<string, bigint> = {
   createPost: 500_000n,
+  editPost: 200_000n,
+  deletePost: 150_000n,
   likePost: 250_000n,
   commentOnPost: 400_000n,
+  editComment: 150_000n,
+  deleteComment: 150_000n,
+  likeComment: 200_000n,
   repost: 400_000n,
   follow: 200_000n,
   unfollow: 200_000n,
@@ -79,6 +84,51 @@ export function useCreatePost() {
   return { createPost, ...action };
 }
 
+function useFreeAction(functionName: 'editPost' | 'deletePost') {
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const [pending, setPending] = useState(false);
+
+  const run = useCallback(
+    async (args: unknown[]) => {
+      setPending(true);
+      try {
+        const hash = await writeContractAsync({
+          address: ritualSocialContract.address,
+          abi: ritualSocialContract.abi,
+          functionName,
+          args,
+          gas: GAS_LIMITS[functionName],
+        });
+        const receipt = await publicClient!.waitForTransactionReceipt({ hash });
+        if (receipt.status === 'success') return true;
+        toast.error('Transaction reverted');
+        return false;
+      } catch (err: any) {
+        toast.error(err?.shortMessage ?? 'Transaction failed or rejected');
+        return false;
+      } finally {
+        setPending(false);
+      }
+    },
+    [writeContractAsync, publicClient, functionName],
+  );
+
+  return { run, pending };
+}
+
+export function useEditPost() {
+  const { run, pending } = useFreeAction('editPost');
+  const editPost = (postId: bigint | number | string, newContentURI: string) => run([BigInt(postId), newContentURI]);
+  return { editPost, pending };
+}
+
+export function useDeletePost() {
+  const { run, pending } = useFreeAction('deletePost');
+  const deletePost = (postId: bigint | number | string) => run([BigInt(postId)]);
+  return { deletePost, pending };
+}
+
 export function useLikePost() {
   const action = useRitualAction('likePost');
   const likePost = (postId: bigint | number) => action.send([BigInt(postId)]);
@@ -87,7 +137,8 @@ export function useLikePost() {
 
 export function useCommentOnPost() {
   const action = useRitualAction('commentOnPost');
-  const comment = (postId: bigint | number, contentURI: string) => action.send([BigInt(postId), contentURI]);
+  const comment = (postId: bigint | number, parentCommentId: bigint | number, contentURI: string) =>
+    action.send([BigInt(postId), BigInt(parentCommentId), contentURI]);
   return { comment, ...action };
 }
 
@@ -179,4 +230,4 @@ export function useTipCreator() {
   );
 
   return { tip, pending };
-            }
+    }
