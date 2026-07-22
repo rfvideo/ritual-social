@@ -13,6 +13,10 @@ import {RitualCreatorTokenFactory} from "../src/RitualCreatorTokenFactory.sol";
 ///         - RitualReputation (on-chain reputation scores, TEE-LLM attested)
 ///         - RitualCreatorTokenFactory (bonding-curve social tokens)
 ///
+/// WARNING: This redeploys RitualSocial + RitualTreasury, so any existing posts,
+/// profiles, followers, and treasury balances will be lost. If you want to keep
+/// existing data, use DeployAddOns.s.sol instead to deploy only the new contracts.
+///
 ///   forge script script/Deploy.s.sol:Deploy \
 ///     --rpc-url ritual \
 ///     --private-key $DEPLOYER_PRIVATE_KEY \
