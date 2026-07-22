@@ -3,6 +3,7 @@ import { usePublicClient, useAccount } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import { fetchProfile } from './useProfile';
 import { fetchPostMetadata } from '@/lib/ipfs';
+import { chainTimestampToMs } from '@/lib/utils';
 import type { NotificationRecord } from '@/types';
 
 interface RawActivity {
@@ -65,7 +66,7 @@ async function loadViaDirectScan(
       actor: args.liker,
       targetUser: args.author,
       postId: args.postId.toString(),
-      timestamp: Number(args.timestamp) * 1000,
+      timestamp: chainTimestampToMs(args.timestamp),
       blockNumber: log.blockNumber!.toString(),
     });
   }
@@ -76,7 +77,7 @@ async function loadViaDirectScan(
       kind: 'follow',
       actor: args.follower,
       targetUser: args.followee,
-      timestamp: Number(args.timestamp) * 1000,
+      timestamp: chainTimestampToMs(args.timestamp),
       blockNumber: log.blockNumber!.toString(),
     });
   }
@@ -100,7 +101,7 @@ async function loadViaDirectScan(
       targetUser: viewer,
       postId: args.postId.toString(),
       commentText,
-      timestamp: Number(args.timestamp) * 1000,
+      timestamp: chainTimestampToMs(args.timestamp),
       blockNumber: log.blockNumber!.toString(),
     });
   }
@@ -120,7 +121,7 @@ async function loadViaDirectScan(
       actor: args.reposter,
       targetUser: viewer,
       postId: args.postId.toString(),
-      timestamp: Number(args.timestamp) * 1000,
+      timestamp: chainTimestampToMs(args.timestamp),
       blockNumber: log.blockNumber!.toString(),
     });
   }
