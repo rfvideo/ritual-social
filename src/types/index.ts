@@ -15,6 +15,8 @@ export interface ProfileMetadata {
   location?: string;
   avatarURI?: string;
   bannerURI?: string;
+  /** Optional AI agent persona prompt for this profile. */
+  agentPersona?: string;
 }
 
 export interface UserProfile extends ProfileMetadata {
@@ -23,6 +25,25 @@ export interface UserProfile extends ProfileMetadata {
   followerCount: number;
   followingCount: number;
   postCount: number;
+}
+
+export interface ReputationRecord {
+  address: `0x${string}`;
+  score: number; // 0-100
+  lastUpdatedAt: number;
+  proofHash?: `0x${string}`;
+  exists: boolean;
+}
+
+export interface CreatorTokenRecord {
+  address: `0x${string}`;
+  creator: `0x${string}`;
+  name: string;
+  symbol: string;
+  totalSupply: bigint;
+  balance?: bigint;
+  buyPrice?: bigint;
+  sellRefund?: bigint;
 }
 
 export interface PostRecord {

@@ -6,6 +6,9 @@ import { resolveIpfsUri } from '@/lib/ipfs';
 import { formatCount, formatJoinDate } from '@/lib/utils';
 import { useFollowGraph, useTipCreator } from '@/hooks/useRitualSocial';
 import { useIsFollowing } from '@/hooks/useProfile';
+import { ReputationBadge } from '@/components/profile/ReputationBadge';
+import { CreatorTokenCard } from '@/components/profile/CreatorTokenCard';
+import { AgentPersonaPanel } from '@/components/profile/AgentPersonaPanel';
 import type { UserProfile } from '@/types';
 
 export function ProfileHeader({
@@ -89,6 +92,9 @@ export function ProfileHeader({
             <h1 className="font-display text-xl text-white">{profile.displayName}</h1>
           </div>
           <p className="text-sm text-mist-dim">@{profile.username}</p>
+          <div className="mt-2">
+            <ReputationBadge profile={profile} />
+          </div>
         </div>
 
         {profile.bio && <p className="mt-3 text-[15px] text-mist-light">{profile.bio}</p>}
@@ -128,7 +134,12 @@ export function ProfileHeader({
             <span className="text-mist-dim">Posts</span>
           </span>
         </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <CreatorTokenCard profile={profile} />
+          <AgentPersonaPanel profile={profile} />
+        </div>
       </div>
     </div>
   );
-      }
+}

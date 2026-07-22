@@ -7,6 +7,7 @@ interface ProfileUploadPayload {
   bio: string;
   website?: string;
   location?: string;
+  agentPersona?: string;
   avatar?: { base64: string; mimeType: string } | null;
   banner?: { base64: string; mimeType: string } | null;
   existingAvatarURI?: string;
@@ -88,6 +89,7 @@ export const handler: Handler = async (event) => {
       bio: payload.bio,
       website: payload.website,
       location: payload.location,
+      agentPersona: payload.agentPersona,
       avatarURI,
       bannerURI,
       updatedAt: Date.now(),

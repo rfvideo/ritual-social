@@ -4,6 +4,7 @@ export interface ProfileUpdateInput {
   bio: string;
   website?: string;
   location?: string;
+  agentPersona?: string;
   avatarFile?: File | null;
   bannerFile?: File | null;
   existingAvatarURI?: string;
@@ -39,6 +40,7 @@ export async function uploadProfileMetadata(input: ProfileUpdateInput): Promise<
       bio: input.bio,
       website: input.website,
       location: input.location,
+      agentPersona: input.agentPersona,
       avatar,
       banner,
       existingAvatarURI: input.existingAvatarURI,

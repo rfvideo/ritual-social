@@ -22,6 +22,7 @@ export function EditProfileModal({
   const [bio, setBio] = useState(profile.bio);
   const [website, setWebsite] = useState(profile.website ?? '');
   const [location, setLocation] = useState(profile.location ?? '');
+  const [agentPersona, setAgentPersona] = useState(profile.agentPersona ?? '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,6 +48,7 @@ export function EditProfileModal({
         bio: bio.trim(),
         website: website.trim() || undefined,
         location: location.trim() || undefined,
+        agentPersona: agentPersona.trim() || undefined,
         avatarFile,
         bannerFile,
         existingAvatarURI: profile.avatarURI,
@@ -144,6 +146,18 @@ export function EditProfileModal({
               </div>
               <Field label="Website / X / Other link" value={website} onChange={setWebsite} maxLength={100} />
               <Field label="Location" value={location} onChange={setLocation} maxLength={50} />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-mist-dim">AI Agent Persona</label>
+                <textarea
+                  value={agentPersona}
+                  onChange={(e) => setAgentPersona(e.target.value)}
+                  maxLength={280}
+                  rows={3}
+                  placeholder="Describe how your Ritual AI agent should sound and what it should talk about. Stored in your profile metadata."
+                  className="w-full resize-none rounded-xl border border-ash-300 bg-void-200 px-3 py-2 text-sm text-mist-light focus:border-ritual-500 focus:outline-none"
+                />
+                <p className="mt-1 text-[10px] text-mist-dim">Others can ask your agent to draft replies using Ritual on-chain LLM.</p>
+              </div>
 
               <button onClick={handleSave} disabled={busy} className="ritual-btn w-full">
                 {busy ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}

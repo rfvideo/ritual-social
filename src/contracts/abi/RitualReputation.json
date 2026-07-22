@@ -1,0 +1,93 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      { "name": "initialOwner", "type": "address", "internalType": "address" },
+      { "name": "initialUpdater", "type": "address", "internalType": "address" }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  { "type": "function", "name": "owner", "inputs": [], "outputs": [{ "name": "", "type": "address", "internalType": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "renounceOwnership", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
+  { "type": "function", "name": "transferOwnership", "inputs": [{ "name": "newOwner", "type": "address", "internalType": "address" }], "outputs": [], "stateMutability": "nonpayable" },
+  {
+    "type": "function",
+    "name": "updateReputation",
+    "inputs": [
+      { "name": "account", "type": "address", "internalType": "address" },
+      { "name": "score", "type": "uint8", "internalType": "uint8" },
+      { "name": "proofHash", "type": "bytes32", "internalType": "bytes32" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getReputation",
+    "inputs": [{ "name": "account", "type": "address", "internalType": "address" }],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct RitualReputation.Reputation",
+        "components": [
+          { "name": "score", "type": "uint8", "internalType": "uint8" },
+          { "name": "lastUpdatedAt", "type": "uint64", "internalType": "uint64" },
+          { "name": "proofHash", "type": "bytes32", "internalType": "bytes32" },
+          { "name": "exists", "type": "bool", "internalType": "bool" }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "reputations",
+    "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "outputs": [
+      { "name": "score", "type": "uint8", "internalType": "uint8" },
+      { "name": "lastUpdatedAt", "type": "uint64", "internalType": "uint64" },
+      { "name": "proofHash", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "exists", "type": "bool", "internalType": "bool" }
+    ],
+    "stateMutability": "view"
+  },
+  { "type": "function", "name": "updater", "inputs": [], "outputs": [{ "name": "", "type": "address", "internalType": "address" }], "stateMutability": "view" },
+  {
+    "type": "function",
+    "name": "setUpdater",
+    "inputs": [{ "name": "newUpdater", "type": "address", "internalType": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "ReputationUpdated",
+    "inputs": [
+      { "name": "account", "type": "address", "indexed": true, "internalType": "address" },
+      { "name": "score", "type": "uint8", "indexed": false, "internalType": "uint8" },
+      { "name": "proofHash", "type": "bytes32", "indexed": false, "internalType": "bytes32" },
+      { "name": "timestamp", "type": "uint64", "indexed": false, "internalType": "uint64" }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UpdaterChanged",
+    "inputs": [
+      { "name": "oldUpdater", "type": "address", "indexed": true, "internalType": "address" },
+      { "name": "newUpdater", "type": "address", "indexed": true, "internalType": "address" }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ScoreOutOfRange",
+    "inputs": [{ "name": "score", "type": "uint8", "internalType": "uint8" }]
+  }
+]
