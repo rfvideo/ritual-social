@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Repeat2 } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
-import { WalletBadge } from '@/components/wallet/WalletBadge';
-import { ExplorerLink } from '@/components/common/ExplorerLink';
 import { AIExplainTerms } from '@/components/ai/AIExplainTerms';
 import { PostActions } from './PostActions';
 import { PostMenu } from './PostMenu';
@@ -77,7 +75,6 @@ export function PostCard({ post }: { post: PostRecord }) {
                 {post.author.displayName}
               </Link>
               <span className="text-sm text-mist-dim">@{post.author.username}</span>
-              <WalletBadge address={post.author.address} />
               <span className="text-mist-dim">·</span>
               <span className="text-sm text-mist-dim">
                 {formatRelativeTime(post.createdAt)}
@@ -98,12 +95,8 @@ export function PostCard({ post }: { post: PostRecord }) {
           <ImageGrid images={post.images} />
 
           <PostActions post={post} />
-
-          <div className="mt-2">
-            <ExplorerLink txHash={post.onChain.txHash} />
-          </div>
         </div>
       </div>
     </motion.article>
   );
-}
+                }
