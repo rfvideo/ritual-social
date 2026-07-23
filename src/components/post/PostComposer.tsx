@@ -145,7 +145,7 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg text-white">Create Post</h2>
+              <h2 className="font-display text-lg text-mist-light">Create Post</h2>
               <button onClick={handleClose} className="rounded-full p-1.5 text-mist-dim hover:bg-ash-100">
                 <X size={18} />
               </button>
@@ -238,4 +238,4 @@ export function PostComposer({ open, onClose }: { open: boolean; onClose: () => 
       />
     </AnimatePresence>
   );
-      }
+                    }
