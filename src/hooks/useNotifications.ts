@@ -4,6 +4,7 @@ import { ritualSocialContract } from '@/contracts';
 import { fetchProfile } from './useProfile';
 import { fetchPostMetadata } from '@/lib/ipfs';
 import { chainTimestampToMs } from '@/lib/utils';
+import { getNotificationsLastSeenAt } from '@/lib/notificationReadState';
 import type { NotificationRecord } from '@/types';
 
 interface RawActivity {
@@ -152,6 +153,8 @@ async function loadNotifications(
     return profileCache.get(key)!;
   }
 
+  const lastSeenAt = getNotificationsLastSeenAt(viewer);
+
   const notifications = await Promise.all(
     raw.map(async (a) => ({
       id: a.id,
@@ -160,7 +163,7 @@ async function loadNotifications(
       postId: a.postId,
       commentText: a.commentText,
       createdAt: a.timestamp,
-      read: false,
+      read: a.timestamp <= lastSeenAt,
     })),
   );
 
