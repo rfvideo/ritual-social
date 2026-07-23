@@ -17,7 +17,7 @@ export function TrendingList({ posts, limit = 5 }: { posts: PostRecord[]; limit?
 
   return (
     <div className="glass-panel rounded-2xl p-4">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-mist-light">
         <TrendingUp size={16} className="text-ritual-400" /> Trending on Ritual
       </div>
       {trending.length === 0 ? (
