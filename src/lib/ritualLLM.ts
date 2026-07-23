@@ -1,5 +1,15 @@
-import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters, keccak256, toHex, hexToBytes } from 'viem';
-import type { Hex, Address, PublicClient, WalletClient, TransactionReceipt } from 'viem';
+import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters } from 'viem';
+import type { Hex, Address, PublicClient, WalletClient } from 'viem';
+
+/**
+ * Direct integration with Ritual Chain's real LLM precompile (address 0x0802).
+ * This is genuine Ritual-native AI: the prompt runs inside a TEE-verified
+ * executor and the model's response settles on-chain in the same
+ * transaction — nothing here is a Netlify-function stand-in.
+ *
+ * Built from the official ritual-foundation/ritual-dapp-skills reference
+ * (skills/ritual-dapp-llm, ritual-dapp-precompiles, ritual-dapp-contracts).
+ */
 
 export const LLM_PRECOMPILE = '0x0000000000000000000000000000000000000802' as const;
 export const RITUAL_WALLET = '0x532F0dF0896F353d8C3DD8cc134e8129DA2a3948' as const;
@@ -33,68 +43,6 @@ const TEE_REGISTRY_ABI = [
     outputs: [
       {
         type: 'tuple[]',
-        components: [
-          {
-            name: 'node',
-            type: 'tuple',
-            components: [
-              { name: 'paymentAddress', type: 'address' },
-              { name: 'teeAddress', type: 'address' },
-              { name: 'teeType', type: 'uint8' },
-              { name: 'publicKey', type: 'bytes' },
-              { name: 'endpoint', type: 'string' },
-              { name: 'certPubKeyHash', type: 'bytes32' },
-              { name: 'capability', type: 'uint8' },
-            ],
-          },
-          { name: 'isValid', type: 'bool' },
-          { name: 'workloadId', type: 'bytes32' },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'getCapabilityIndexStatus',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'capability', type: 'uint8' }],
-    outputs: [
-      {
-        type: 'tuple',
-        components: [
-          { name: 'count', type: 'uint256' },
-          { name: 'finalized', type: 'bool' },
-          { name: 'lastUpdatedBlock', type: 'uint256' },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'pickServiceByCapability',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'capability', type: 'uint8' },
-      { name: 'activeOnly', type: 'bool' },
-      { name: 'seed', type: 'uint256' },
-      { name: 'maxProbes', type: 'uint256' },
-    ],
-    outputs: [
-      { name: 'teeAddress', type: 'address' },
-      { name: 'found', type: 'bool' },
-    ],
-  },
-  {
-    name: 'getIndexedServiceByCapabilityAt',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'capability', type: 'uint8' },
-      { name: 'index', type: 'uint256' },
-    ],
-    outputs: [
-      {
-        type: 'tuple',
         components: [
           {
             name: 'node',
@@ -162,82 +110,20 @@ export async function ensureRitualWalletFunded(
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
-const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
-
-function isValidExecutor(s: {
-  node: {
-    teeAddress: Address;
-    publicKey: `0x${string}`;
-    certPubKeyHash: `0x${string}`;
-    endpoint: string;
-  };
-  isValid: boolean;
-}): boolean {
-  return (
-    s.isValid &&
-    s.node.teeAddress !== ZERO_ADDRESS &&
-    s.node.publicKey !== '0x' &&
-    s.node.publicKey.length > 2 &&
-    s.node.certPubKeyHash !== ZERO_BYTES32 &&
-    s.node.certPubKeyHash.length > 2 &&
-    s.node.endpoint.length > 0
-  );
-}
-
 export async function pickLLMExecutor(publicClient: PublicClient): Promise<LLMExecutor> {
-  // The canonical registry on the live Ritual Chain (chain id 1979) exposes
-  // pickServiceByCapability. The contract reverts for getCapabilityIndexStatus,
-  // so we use the registry's own selector and then resolve the public key from
-  // the full service list. See ritual-dapp-contracts / ritual-dapp-llm skills.
-  const latestBlock = await publicClient.getBlock({ blockTag: 'latest' });
-  const seed = BigInt(latestBlock.hash);
-
-  let pickedAddress: Address | null = null;
-  try {
-    const [teeAddress, found] = (await publicClient.readContract({
-      address: TEE_SERVICE_REGISTRY,
-      abi: TEE_REGISTRY_ABI,
-      functionName: 'pickServiceByCapability',
-      args: [CAPABILITY_LLM, true, seed, 10n],
-    })) as readonly [Address, boolean];
-    if (found && teeAddress !== ZERO_ADDRESS) {
-      pickedAddress = teeAddress;
-    }
-  } catch (err) {
-    console.warn('[pickLLMExecutor] pickServiceByCapability failed, falling back to enumeration:', err);
-  }
-
-  // Resolve the full service list to obtain the public key and verify the
-  // picked address is valid (non-zero public key, cert hash, and endpoint).
   const services = (await publicClient.readContract({
     address: TEE_SERVICE_REGISTRY,
     abi: TEE_REGISTRY_ABI,
     functionName: 'getServicesByCapability',
     args: [CAPABILITY_LLM, true],
   })) as readonly {
-    node: {
-      teeAddress: Address;
-      publicKey: `0x${string}`;
-      certPubKeyHash: `0x${string}`;
-      endpoint: string;
-    };
+    node: { teeAddress: Address; publicKey: `0x${string}` };
     isValid: boolean;
   }[];
 
-  if (pickedAddress) {
-    const match = services.find((s) => s.isValid && s.node.teeAddress === pickedAddress && isValidExecutor(s));
-    if (match) {
-      return { teeAddress: match.node.teeAddress, publicKey: match.node.publicKey };
-    }
-  }
-
-  const valid = services.find(isValidExecutor);
+  const valid = services.find((s) => s.isValid && s.node.teeAddress !== '0x0000000000000000000000000000000000000000');
   if (!valid) {
-    throw new Error(
-      'No LLM-capable executor is currently available on Ritual Chain. ' +
-        'All registered services lack a public key, cert hash, or endpoint.',
-    );
+    throw new Error('No LLM-capable executor is currently available on Ritual Chain.');
   }
   return { teeAddress: valid.node.teeAddress, publicKey: valid.node.publicKey };
 }
@@ -263,60 +149,28 @@ export interface LLMCallResult {
   content: string;
 }
 
-export interface LLMCallOptions {
-  /**
-   * Optional DA (conversation-history) storage ref.
-   * Use `['', '', '']` when you don't need conversation history (e.g. one-shot
-   * moderation). Defaults to empty so no off-chain storage credentials are
-   * required, matching the official Ritual dapp-llm examples.
-   */
-  convoHistory?: [string, string, string];
-  /** Custom inference timeout in blocks. Defaults to 300 (safe for GLM-4.7-FP8). */
-  ttl?: bigint;
-}
-
 export async function callRitualLLM(
   publicClient: PublicClient,
   walletClient: WalletClient,
   account: Address,
   systemPrompt: string,
   userPrompt: string,
-  options: LLMCallOptions = {},
 ): Promise<LLMCallResult> {
   const executor = await pickLLMExecutor(publicClient);
-
-  const convoHistory: [string, string, string] = options.convoHistory ?? ['', '', ''];
-  const ttl = options.ttl ?? 300n;
-  const requiresDA = convoHistory[0] !== '' || convoHistory[2] !== '';
-
-  let encryptedSecrets: `0x${string}`[] = [];
-  let secretSignatures: `0x${string}`[] = [];
-
-  if (requiresDA) {
-    // Only encrypt DA credentials when we actually need off-chain storage.
-    // The executor uses the keyRef in convoHistory to look up the decrypted
-    // secret; for the look-up to work the secret value must be a plain string
-    // (not nested JSON). See ritual-dapp-da.
-    const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
-    const encryptedSecretBytes = hexToBytes(encryptedSecret);
-    const secretSignature = await walletClient.signMessage({
-      account,
-      message: { raw: encryptedSecretBytes },
-    });
-    encryptedSecrets = [encryptedSecret];
-    secretSignatures = [secretSignature];
-  }
+  const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
 
   const messagesJson = JSON.stringify([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]);
 
+  const convoHistory: [string, string, string] = ['pinata', '', 'DA_PINATA_JWT'];
+
   const encoded: Hex = encodeAbiParameters(parseAbiParameters(LLM_REQUEST_TYPES), [
     executor.teeAddress,
-    encryptedSecrets,
-    ttl,
-    secretSignatures,
+    [encryptedSecret],
+    300n,
+    [],
     '0x',
     messagesJson,
     MODEL,
@@ -353,7 +207,7 @@ export async function callRitualLLM(
     chain: walletClient.chain,
   });
 
-  const POLL_INTERVAL_MS = 4000;
+  const POLL_INTERVAL_MS = 3000;
   const MAX_WAIT_MS = 110_000;
   const startedAt = Date.now();
 
@@ -363,21 +217,21 @@ export async function callRitualLLM(
   while (Date.now() - startedAt < MAX_WAIT_MS) {
     attempts++;
     try {
-      // Ritual Chain adds a custom `spcCalls` field to the receipt. viem's
-      // typed TransactionReceipt does not declare it, so we read the raw RPC
-      // response and cast it to our RitualReceipt extension.
-      const receipt = (await publicClient.request({
-        method: 'eth_getTransactionReceipt',
-        params: [hash],
-      })) as TransactionReceipt & RitualReceipt;
+      const tx = (await publicClient.getTransaction({ hash })) as unknown as {
+        spcCalls?: Array<{ address?: string; output?: Hex }>;
+      };
+      const spcCalls = tx.spcCalls ?? [];
+      const match = spcCalls.find((c) => (c.address ?? '').toLowerCase() === LLM_PRECOMPILE);
 
-      const decoded = decodeLLMReceipt(receipt);
-      if (!decoded.pending) {
-        return decoded;
+      if (match?.output && match.output !== '0x') {
+        return decodeLLMOutput(match.output);
       }
+
       lastResult = {
-        ...decoded,
-        errorMessage: `${decoded.errorMessage} — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
+        hasError: true,
+        pending: true,
+        errorMessage: `Not settled yet (tx found, ${spcCalls.length} spcCalls entries, none matching 0x0802 with output yet) — checked ${attempts}x over ${Math.round((Date.now() - startedAt) / 1000)}s`,
+        content: '',
       };
     } catch {
       lastResult = {
@@ -393,46 +247,10 @@ export async function callRitualLLM(
   return lastResult;
 }
 
-/**
- * Ritual Chain extends the standard transaction receipt with an `spcCalls`
- * field for short-running async precompiles (HTTP 0x0801, LLM 0x0802).
- * The settled result is here — NOT in the receipt logs. viem does not know
- * this field by default, so we cast it from the raw receipt.
- */
-interface RitualReceipt {
-  spcCalls?: Array<{ input: Hex; output: Hex }>;
-}
-
-function extractSpcOutput(receipt: TransactionReceipt): Hex | null {
-  const ritual = receipt as unknown as RitualReceipt;
-  const calls = ritual.spcCalls;
-  if (!calls || calls.length === 0) return null;
-  // At most one short-running async precompile per transaction; the LLM
-  // precompile's settled output is the first (and only) spcCall entry.
-  return calls[0].output;
-}
-
-function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
-  if (receipt.status === 'reverted') {
-    return {
-      hasError: true,
-      errorMessage: `Transaction reverted on-chain (not an async-settlement issue). Block ${receipt.blockNumber}, gasUsed ${receipt.gasUsed}.`,
-      content: '',
-    };
-  }
-
-  const raw = extractSpcOutput(receipt);
-
-  if (!raw || raw === '0x') {
-    const detail = receipt.logs.length === 0
-      ? 'spcCalls not yet present on receipt'
-      : `spcCalls not yet present on receipt (receipt has ${receipt.logs.length} log(s), but short-running async precompiles write results to spcCalls, not logs)`;
-    return { hasError: true, pending: true, errorMessage: `Not settled yet (${detail})`, content: '' };
-  }
-
+function decodeLLMOutput(output: Hex): LLMCallResult {
   const [hasError, completionData, , errorMessage] = decodeAbiParameters(
     parseAbiParameters('bool, bytes, bytes, string, (string,string,string)'),
-    raw,
+    output,
   ) as [boolean, Hex, Hex, string, [string, string, string]];
 
   if (hasError) {
@@ -463,4 +281,4 @@ function decodeLLMReceipt(receipt: TransactionReceipt): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-}
+  }
