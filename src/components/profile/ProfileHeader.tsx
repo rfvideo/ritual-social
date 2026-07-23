@@ -10,12 +10,10 @@ import type { UserProfile } from '@/types';
 
 export function ProfileHeader({
   profile,
-  totalLikes,
   onEdit,
   onFollowChange,
 }: {
   profile: UserProfile;
-  totalLikes: number;
   onEdit: () => void;
   onFollowChange: () => void;
 }) {
@@ -128,7 +126,7 @@ export function ProfileHeader({
           </span>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        <div className="mt-4 flex gap-x-5 text-sm">
           <span className="whitespace-nowrap">
             <strong className="text-mist-light">{formatCount(profile.followingCount)}</strong>{' '}
             <span className="text-mist-dim">Following</span>
@@ -137,16 +135,8 @@ export function ProfileHeader({
             <strong className="text-mist-light">{formatCount(profile.followerCount)}</strong>{' '}
             <span className="text-mist-dim">Followers</span>
           </span>
-          <span className="whitespace-nowrap">
-            <strong className="text-mist-light">{formatCount(profile.postCount)}</strong>{' '}
-            <span className="text-mist-dim">Posts</span>
-          </span>
-          <span className="whitespace-nowrap">
-            <strong className="text-mist-light">{formatCount(totalLikes)}</strong>{' '}
-            <span className="text-mist-dim">Likes</span>
-          </span>
         </div>
       </div>
     </div>
   );
-                  }
+  }
