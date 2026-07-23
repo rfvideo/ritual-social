@@ -15,7 +15,7 @@ export function SuggestedUsers({ posts, limit = 4 }: { posts: PostRecord[]; limi
 
   return (
     <div className="glass-panel rounded-2xl p-4">
-      <div className="mb-3 text-sm font-semibold text-white">Suggested Creators</div>
+      <div className="mb-3 text-sm font-semibold text-mist-light">Suggested Creators</div>
       <ul className="space-y-3">
         {creators.map((c) => (
           <li key={c.address}>
