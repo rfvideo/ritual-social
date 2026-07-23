@@ -24,7 +24,7 @@ export function NotificationsPage() {
   return (
     <div>
       <div className="sticky top-0 z-10 border-b border-ash-200 bg-void-100/90 px-4 py-3 backdrop-blur-xl">
-        <h1 className="font-display text-lg text-white">Notifications</h1>
+        <h1 className="font-display text-lg text-mist-light">Notifications</h1>
       </div>
 
       {!isConnected ? (
