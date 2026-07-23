@@ -7,8 +7,6 @@ import { formatCount, formatJoinDate } from '@/lib/utils';
 import { useFollowGraph, useTipCreator } from '@/hooks/useRitualSocial';
 import { useIsFollowing } from '@/hooks/useProfile';
 import { ReputationBadge } from '@/components/profile/ReputationBadge';
-import { CreatorTokenCard } from '@/components/profile/CreatorTokenCard';
-import { AgentPersonaPanel } from '@/components/profile/AgentPersonaPanel';
 import type { UserProfile } from '@/types';
 
 export function ProfileHeader({
@@ -133,11 +131,6 @@ export function ProfileHeader({
             <strong className="text-mist-light">{formatCount(profile.postCount)}</strong>{' '}
             <span className="text-mist-dim">Posts</span>
           </span>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <CreatorTokenCard profile={profile} />
-          <AgentPersonaPanel profile={profile} />
         </div>
       </div>
     </div>
