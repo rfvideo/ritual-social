@@ -25,7 +25,7 @@ export function ProfilePage() {
   if (isError || !profile) return <ErrorState message="Profile not found." onRetry={() => refetch()} />;
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div>
       <ProfileHeader profile={profile} totalLikes={totalLikes} onEdit={() => setEditOpen(true)} onFollowChange={() => refetch()} />
 
       <div className="border-t border-ash-200">
