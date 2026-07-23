@@ -19,12 +19,14 @@ export function ProfilePage() {
     [allPosts, address],
   );
 
+  const totalLikes = useMemo(() => authorPosts.reduce((sum, p) => sum + p.likeCount, 0), [authorPosts]);
+
   if (isLoading) return <SkeletonProfileHeader />;
   if (isError || !profile) return <ErrorState message="Profile not found." onRetry={() => refetch()} />;
 
   return (
-    <div>
-      <ProfileHeader profile={profile} onEdit={() => setEditOpen(true)} onFollowChange={() => refetch()} />
+    <div className="w-full max-w-full overflow-x-hidden">
+      <ProfileHeader profile={profile} totalLikes={totalLikes} onEdit={() => setEditOpen(true)} onFollowChange={() => refetch()} />
 
       <div className="border-t border-ash-200">
         <div className="border-b border-ash-200 px-4 py-3 text-sm font-semibold text-mist-light">Posts</div>
@@ -34,7 +36,7 @@ export function ProfilePage() {
           isError={feedError}
           onRetry={() => refetchFeed()}
           emptyTitle="No posts yet"
-          emptyDescription={`@${profile.username} hasn’t posted anything yet.`}
+          emptyDescription={`@${profile.username} hasn't posted anything yet.`}
         />
       </div>
 
