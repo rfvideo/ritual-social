@@ -52,7 +52,7 @@ export default function App() {
           </Suspense>
         </main>
 
-        <div className="px-4">
+        <div className="hidden px-4 xl:block">
           <RightPanel />
         </div>
       </div>
