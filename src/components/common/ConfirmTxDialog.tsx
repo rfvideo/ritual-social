@@ -44,7 +44,7 @@ export function ConfirmTxDialog({ open, title, description, stage, onConfirm, on
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-ritual-500/10 text-ritual-400">
               <Zap size={20} />
             </div>
-            <h3 className="font-display text-lg text-white">{title}</h3>
+            <h3 className="font-display text-lg text-mist-light">{title}</h3>
             <p className="mt-1 text-sm text-mist-dim">{description}</p>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl border border-ash-200 bg-void-200 px-4 py-3">
