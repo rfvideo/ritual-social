@@ -5,7 +5,6 @@ import { Avatar } from '@/components/common/Avatar';
 import { WalletBadge } from '@/components/wallet/WalletBadge';
 import { ExplorerLink } from '@/components/common/ExplorerLink';
 import { AIExplainTerms } from '@/components/ai/AIExplainTerms';
-import { RitualTranslateButton } from '@/components/ai/RitualTranslateButton';
 import { PostActions } from './PostActions';
 import { PostMenu } from './PostMenu';
 import { resolveIpfsUri } from '@/lib/ipfs';
@@ -94,10 +93,7 @@ export function PostCard({ post }: { post: PostRecord }) {
             </div>
           </Link>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <RitualTranslateButton text={post.caption} />
-            <AIExplainTerms text={post.caption} />
-          </div>
+          <AIExplainTerms text={post.caption} />
 
           <ImageGrid images={post.images} />
 
