@@ -6,6 +6,7 @@ import { Avatar } from '@/components/common/Avatar';
 import { ConfirmTxDialog } from '@/components/common/ConfirmTxDialog';
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 import { usePostComment } from '@/hooks/useComments';
+import { useProfile } from '@/hooks/useProfile';
 import { uploadCommentContent } from '@/lib/ipfs';
 
 interface CommentComposerProps {
@@ -16,6 +17,7 @@ interface CommentComposerProps {
 
 export function CommentComposer({ postId, replyTo, onCancelReply }: CommentComposerProps) {
   const { address, isConnected } = useAccount();
+  const { data: myProfile } = useProfile(address);
   const [body, setBody] = useState('');
   const [uploading, setUploading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -73,7 +75,7 @@ export function CommentComposer({ postId, replyTo, onCancelReply }: CommentCompo
           </div>
         )}
         <div className="flex gap-3">
-          <Avatar address={address!} size="md" />
+          <Avatar address={address!} uri={myProfile?.avatarURI} size="md" />
           <div className="flex-1">
             <textarea
               value={body}
