@@ -24,6 +24,10 @@ export function HomePage() {
   const [ordered, setOrdered] = useState<PostRecord[]>([]);
   const [tab, setTab] = useState<HomeTab>('for-you');
 
+  useEffect(() => {
+    setOrdered(posts);
+  }, [posts]);
+
   const { data: followingProfiles = [], isLoading: followingLoading } = useFollowList(address, 'following', tab === 'following');
   const followingAddresses = useMemo(
     () => new Set(followingProfiles.map((p) => p.address.toLowerCase())),
