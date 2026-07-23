@@ -95,7 +95,7 @@ export function ProfileHeader({
         )}
 
         <div className="mt-3 min-w-0">
-          <h1 className="break-words font-display text-lg text-white sm:text-xl">{profile.displayName}</h1>
+          <h1 className="break-words font-display text-lg text-mist-light sm:text-xl">{profile.displayName}</h1>
           <p className="break-words text-sm text-mist-dim">@{profile.username}</p>
         </div>
 
@@ -139,4 +139,4 @@ export function ProfileHeader({
       </div>
     </div>
   );
-  }
+}
