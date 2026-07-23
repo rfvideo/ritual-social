@@ -44,7 +44,7 @@ export function Sidebar({ onPublish }: { onPublish: () => void }) {
                   'flex items-center gap-3 rounded-full px-4 py-2.5 text-[15px] font-medium transition-colors',
                   isActive
                     ? 'bg-ash-100 text-ritual-300 shadow-glow-sm'
-                    : 'text-mist hover:bg-ash-100/60 hover:text-white',
+                    : 'text-mist hover:bg-ash-100/60 hover:text-mist-light',
                 )
               }
             >
@@ -65,7 +65,7 @@ export function Sidebar({ onPublish }: { onPublish: () => void }) {
                   'flex items-center gap-3 rounded-full px-4 py-2.5 text-[15px] font-medium transition-colors',
                   isActive
                     ? 'bg-ash-100 text-ritual-300 shadow-glow-sm'
-                    : 'text-mist hover:bg-ash-100/60 hover:text-white',
+                    : 'text-mist hover:bg-ash-100/60 hover:text-mist-light',
                 )
               }
             >
