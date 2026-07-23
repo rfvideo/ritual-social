@@ -79,7 +79,7 @@ export function EditProfileModal({
             exit={{ y: 30, opacity: 0 }}
           >
             <div className="flex items-center justify-between px-5 pt-5">
-              <h2 className="font-display text-lg text-white">Edit Profile</h2>
+              <h2 className="font-display text-lg text-mist-light">Edit Profile</h2>
               <button onClick={onClose} disabled={busy} className="rounded-full p-1.5 text-mist-dim hover:bg-ash-100">
                 <X size={18} />
               </button>
@@ -183,4 +183,4 @@ function Field({
       </div>
     </div>
   );
-    }
+}
