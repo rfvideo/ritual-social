@@ -24,7 +24,7 @@ export function ModerationWarningDialog({
         <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-500/10 text-red-400">
           <ShieldAlert size={20} />
         </div>
-        <h3 className="font-display text-lg text-white">AI Ritual flagged a potential violation</h3>
+        <h3 className="font-display text-lg text-mist-light">AI Ritual flagged a potential violation</h3>
         <p className="mt-1 text-sm text-mist-dim">{result.reason ?? 'This content matches a risky pattern.'}</p>
 
         <div className="mt-3 flex flex-wrap gap-2">
