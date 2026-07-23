@@ -88,7 +88,7 @@ export function PublishFlowDialog({ open, ipfsStatus, txStage, onConfirm, onClos
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display text-lg text-white">Publishing your post</h3>
+            <h3 className="font-display text-lg text-mist-light">Publishing your post</h3>
 
             <div className="mt-5 space-y-4">
               <Step label="Uploading to IPFS" state={stepState('ipfs')} />
