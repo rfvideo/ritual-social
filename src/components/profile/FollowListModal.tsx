@@ -35,7 +35,7 @@ export function FollowListModal({ address, type, open, onClose }: FollowListModa
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-ash-200 px-5 py-4">
-              <h3 className="font-display text-lg text-white">{type === 'following' ? 'Following' : 'Followers'}</h3>
+              <h3 className="font-display text-lg text-mist-light">{type === 'following' ? 'Following' : 'Followers'}</h3>
               <button onClick={onClose} className="rounded-full p-1.5 text-mist-dim hover:bg-ash-100">
                 <X size={18} />
               </button>
