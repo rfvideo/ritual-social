@@ -3,18 +3,52 @@ import { usePublicClient } from 'wagmi';
 import { ritualSocialContract } from '@/contracts';
 import type { PostRecord } from '@/types';
 
+async function fetchIndexedReplyPostIds(address: string): Promise<string[]> {
+  try {
+    const res = await fetch(`/.netlify/functions/profile-replies?address=${address}`);
+    if (!res.ok) return [];
+    const { postIds } = (await res.json()) as { postIds: string[] };
+    return postIds;
+  } catch {
+    return [];
+  }
+}
+
+async function scanRecentReplyPostIds(
+  publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
+  address: string,
+): Promise<string[]> {
+  const latestBlock = await publicClient.getBlockNumber();
+  const lookback = 100_000n;
+  const fromBlock = latestBlock > lookback ? latestBlock - lookback : 0n;
+
+  const logs = await publicClient.getContractEvents({
+    address: ritualSocialContract.address,
+    abi: ritualSocialContract.abi,
+    eventName: 'CommentAdded',
+    args: { author: address as `0x${string}` },
+    fromBlock,
+    toBlock: latestBlock,
+  });
+
+  return logs.map((log) => (log as any).args.postId.toString());
+}
+
 export function useProfileReplies(address: string | undefined, allPosts: PostRecord[]) {
+  const publicClient = usePublicClient();
+
   return useQuery({
     queryKey: ['profile-replies', address],
     queryFn: async (): Promise<PostRecord[]> => {
-      const res = await fetch(`/.netlify/functions/profile-replies?address=${address}`);
-      if (!res.ok) throw new Error('Failed to load replies');
-      const { postIds } = (await res.json()) as { postIds: string[] };
-      const set = new Set(postIds);
+      const [indexed, recent] = await Promise.all([
+        fetchIndexedReplyPostIds(address!),
+        publicClient ? scanRecentReplyPostIds(publicClient, address!).catch(() => []) : Promise.resolve([]),
+      ]);
+      const set = new Set([...indexed, ...recent]);
       return allPosts.filter((p) => set.has(p.id));
     },
     enabled: !!address,
-    staleTime: 30_000,
+    staleTime: 10_000,
   });
 }
 
