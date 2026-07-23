@@ -19,7 +19,7 @@ export function PostDetailPage() {
         <Link to="/" className="rounded-full p-1.5 hover:bg-ash-100">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="font-display text-lg text-white">Post</h1>
+        <h1 className="font-display text-lg text-mist-light">Post</h1>
       </div>
 
       {isLoading && <SkeletonPost />}
