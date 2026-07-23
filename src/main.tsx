@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'react-hot-toast';
 import '@rainbow-me/rainbowkit/styles.css';
 import App from './App';
@@ -14,9 +14,9 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
-const ritualRainbowTheme = darkTheme({
-  accentColor: '#3AF075',
-  accentColorForeground: '#050706',
+const ritualRainbowTheme = lightTheme({
+  accentColor: '#0B3D28',
+  accentColorForeground: '#C9A868',
   borderRadius: 'large',
   fontStack: 'system',
   overlayBlur: 'small',
@@ -33,9 +33,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               position="bottom-center"
               toastOptions={{
                 style: {
-                  background: '#141917',
-                  color: '#C8D2CB',
-                  border: '1px solid #2a312c',
+                  background: '#F6F1E7',
+                  color: '#1C1710',
+                  border: '1px solid #D8CBA6',
                   fontSize: '13px',
                 },
               }}
