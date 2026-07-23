@@ -1,16 +1,6 @@
 import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters } from 'viem';
 import type { Hex, Address, PublicClient, WalletClient } from 'viem';
 
-/**
- * Direct integration with Ritual Chain's real LLM precompile (address 0x0802).
- * This is genuine Ritual-native AI: the prompt runs inside a TEE-verified
- * executor and the model's response settles on-chain in the same
- * transaction — nothing here is a Netlify-function stand-in.
- *
- * Built from the official ritual-foundation/ritual-dapp-skills reference
- * (skills/ritual-dapp-llm, ritual-dapp-precompiles, ritual-dapp-contracts).
- */
-
 export const LLM_PRECOMPILE = '0x0000000000000000000000000000000000000802' as const;
 export const RITUAL_WALLET = '0x532F0dF0896F353d8C3DD8cc134e8129DA2a3948' as const;
 export const TEE_SERVICE_REGISTRY = '0x9644e8562cE0Fe12b4deeC4163c064A8862Bf47F' as const;
@@ -159,6 +149,11 @@ export async function callRitualLLM(
   const executor = await pickLLMExecutor(publicClient);
   const encryptedSecret = await fetchEncryptedSecret(executor.publicKey);
 
+  const secretSignature = await walletClient.signMessage({
+    account,
+    message: { raw: encryptedSecret },
+  });
+
   const messagesJson = JSON.stringify([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
@@ -170,7 +165,7 @@ export async function callRitualLLM(
     executor.teeAddress,
     [encryptedSecret],
     300n,
-    [],
+    [secretSignature],
     '0x',
     messagesJson,
     MODEL,
@@ -281,4 +276,4 @@ function decodeLLMOutput(output: Hex): LLMCallResult {
   } catch {
     return { hasError: true, errorMessage: 'Failed to decode model response.', content: '' };
   }
-  }
+                }
