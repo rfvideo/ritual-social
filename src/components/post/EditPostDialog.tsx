@@ -68,7 +68,7 @@ export function EditPostDialog({ post, open, onClose }: EditPostDialogProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg text-white">Edit Post</h2>
+              <h2 className="font-display text-lg text-mist-light">Edit Post</h2>
               <button onClick={onClose} disabled={busy} className="rounded-full p-1.5 text-mist-dim hover:bg-ash-100">
                 <X size={18} />
               </button>
@@ -94,4 +94,4 @@ export function EditPostDialog({ post, open, onClose }: EditPostDialogProps) {
       )}
     </AnimatePresence>
   );
-        }
+}
