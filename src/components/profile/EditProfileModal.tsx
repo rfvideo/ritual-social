@@ -133,7 +133,7 @@ export function EditProfileModal({
               <Field label="Display Name" value={displayName} onChange={setDisplayName} maxLength={50} />
               <Field label="Username" value={username} onChange={setUsername} maxLength={30} prefix="@" />
               <div>
-                <label className="mb-1 block text-xs font-medium text-mist-dim">Bio</label>
+                <label className="mb-1 block text-xs font-semibold text-mist-light">Bio</label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
@@ -171,7 +171,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-mist-dim">{label}</label>
+      <label className="mb-1 block text-xs font-semibold text-mist-light">{label}</label>
       <div className="flex items-center rounded-xl border border-ash-300 bg-void-200 px-3">
         {prefix && <span className="text-sm text-mist-dim">{prefix}</span>}
         <input
@@ -183,4 +183,4 @@ function Field({
       </div>
     </div>
   );
-}
+          }
