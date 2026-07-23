@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNotifications } from '@/hooks/useNotifications';
+import { markNotificationsSeenNow } from '@/lib/notificationReadState';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { SkeletonFeed } from '@/components/common/Skeleton';
 import { EmptyState, ErrorState } from '@/components/common/States';
@@ -7,8 +10,16 @@ import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton';
 import { Bell } from 'lucide-react';
 
 export function NotificationsPage() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { data: notifications, isLoading, isError, refetch } = useNotifications();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!address) return;
+    markNotificationsSeenNow(address);
+    queryClient.invalidateQueries({ queryKey: ['notifications', address] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
 
   return (
     <div>
