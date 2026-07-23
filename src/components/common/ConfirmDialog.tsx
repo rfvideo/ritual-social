@@ -47,7 +47,7 @@ export function ConfirmDialog({
             >
               <AlertTriangle size={20} />
             </div>
-            <h3 className="font-display text-lg text-white">{title}</h3>
+            <h3 className="font-display text-lg text-mist-light">{title}</h3>
             <p className="mt-1 text-sm text-mist-dim">{description}</p>
 
             <div className="mt-5 flex gap-3">
